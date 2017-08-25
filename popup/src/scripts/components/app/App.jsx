@@ -12,7 +12,7 @@ class App extends Component {
     this.main = config.file;
     this.inProgressMap = {"commitInProgress":"commit",
        "newBranchInProgress":"creating branch", "pullInProgress":"retrieving file",
-       "mergeInProgress":"merge", "branchDeleteInProgress":"deleting branch"}; 
+       "mergeInProgress":"merge", "branchDeleteInProgress":"deleting branch","loginInProgress":"login"}; 
     this.handleBranchChange = this.handleBranchChange.bind(this);
     this.handleCommitMessageChange = this.handleCommitMessageChange.bind(this);
     this.handleInputChange = this.handleInputChange.bind(this);
@@ -134,6 +134,8 @@ class App extends Component {
   }
  
   handleLoginSubmit(event) {
+    if (this.state.loginInProgress) return;
+    this.setState({loginInProgress: true});
     chrome.runtime.sendMessage({to:"bg", target:{action:"login"}}, (response) => {
        console.log(response);
        if (response.ok) {
@@ -142,6 +144,7 @@ class App extends Component {
        else {
           this.setState({status: "Login failed"});
        }
+       this.setState({loginInProgress: false});
     });
     event.preventDefault();
   }
