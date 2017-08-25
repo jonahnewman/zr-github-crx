@@ -1,7 +1,6 @@
 import React, {Component} from 'react';
 import getDoc, { setDoc } from './GetDocAsString.js';
 import Select, { Creatable } from 'react-select';
-import { ClipLoader } from 'halogen'; // loading spinner
 import config from '../../../../../config.json';
 
 class App extends Component {
@@ -25,10 +24,10 @@ class App extends Component {
     this.handleMergeSubmit = this.handleMergeSubmit.bind(this);
     this.handleDeleteBranch = this.handleDeleteBranch.bind(this);
     this.deleteBranchRender = this.deleteBranchRender.bind(this);
+    this.handleLoginSubmit = this.handleLoginSubmit.bind(this);
   }
   
   componentWillMount() {
-    console.log("CONFIGERONI", config);
     chrome.runtime.onMessage.addListener(this.receiveMessage);
     chrome.runtime.sendMessage({to:"bg", target:{action:"listBranches",repo:this.repo}},
        (response) => {
@@ -86,7 +85,7 @@ class App extends Component {
                   + this.state.branch.value});
            }
            else if (response.reason == "oldsha") {
-                this.setState({status: `The file you are committing is not the most recent${                    ""} in its branch. Pull the latest in a new tab, integrate your${                           ""} changes, and then commit again.`});
+                this.setState({status: `The file you are committing is not the most recent${                                  ""} in its branch. Pull the latest in a new tab, integrate your${                                            ""} changes, and then commit again.`});
            }
            this.setState({commitInProgress: false});
        });
@@ -133,7 +132,20 @@ class App extends Component {
     });
     event.preventDefault();
   }
-  
+ 
+  handleLoginSubmit(event) {
+    chrome.runtime.sendMessage({to:"bg", target:{action:"login"}}, (response) => {
+       console.log(response);
+       if (response.ok) {
+          this.setState({status: "Logged in successfully"});
+       }
+       else {
+          this.setState({status: "Login failed"});
+       }
+    });
+    event.preventDefault();
+  }
+
   handleDeleteBranch() {
     if (this.state.branchDeleteInProgress) return;
     this.setState({branchDeleteInProgress: true});
@@ -189,8 +201,6 @@ class App extends Component {
                       onChange={this.handleCommitMessageChange} />
 	        </label>
 	        <input type="submit" value="commit and push" />
-                <ClipLoader size="10px" style={{display:this.state.commitInProgress?
-                    "inline":"none"}} />
  	    </form>
 	    <form onSubmit={this.handlePullSubmit}>
                <input type="submit" value="pull and overwrite" />
@@ -213,6 +223,11 @@ class App extends Component {
                 }
                 return a;
               }, "")}
+        </div>
+        <div>
+           <form onSubmit={this.handleLoginSubmit}>
+             <input type="submit" value="manual login" />
+           </form>
         </div>
       </div>
     );

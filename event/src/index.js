@@ -27,9 +27,20 @@ chrome.runtime.onMessage.addListener(
 });
 
 function handleRequest(target, params, cb) {
-   const repo = gh.getRepo(target.repo.user, target.repo.name);
+   var repo;
+   if (target.repo) {
+      if (gh && gh.__auth && gh.__auth.token) { 
+         repo = gh.getRepo(target.repo.user, target.repo.name);
+      }
+      else{
+         cb({ok: false});
+      }
+   }
    console.log("performing action", target.action);
    switch(target.action) {
+      case "login":
+         getAuth(cb);
+         break;
       case "listBranches":
           repo.listBranches().then((branches) => {cb(branches.data);});
           break;
@@ -117,6 +128,7 @@ function getAuth(cb) {
          const respState = response.match(paramRE("state"))[1];
          if (state != respState) {
             console.error("State does not match; something's not right. Aborting.");
+            cb({ok:false});
             return;
          }
          const parameters = {client_id: client_id,
@@ -128,13 +140,13 @@ function getAuth(cb) {
                 if (err) console.error(err);
                 console.log("using access token", body.access_token);
 		gh = new GitHub({token: body.access_token});
-                chrome.storage.local.set({"ZRGithubGranted": true}); 
 		console.log(gh.getUser());
-		cb();
+		cb({ok: true});
          });
       }
       else {
-         console.error("Invalid response from github authorization");
+         console.error("Invalid response from github authorization", response);
+         cb({ok:false});
       }
     });
 }
