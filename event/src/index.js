@@ -74,8 +74,12 @@ function handleRequest(target, params, cb) {
          repo._request("POST", repo.__apiBase+"/repos/"+repo.__fullname+"/merges",
              {base:params.base, head:params.head})
          .then((resp) => {
-             console.log(resp);
              cb({ok: true, message:resp.data.commit.message+" successful"});
+           }, (err) => {
+             console.log(err);
+             if (err.message && err.message.startsWith("409")) {
+             cb({ok: false, reason: "conflict"});
+           }
          });
          break;
       case "commit":
@@ -150,11 +154,18 @@ function getAuth(cb) {
       }
     });
 }
-
-function checkIfTabIsZrIde(tabId, changeInfo, tab) {
-  if (tab.url.indexOf("zerorobotics.mit.edu/ide") != -1){
-    chrome.pageAction.show(tabId);
-  } 
-}
-
-chrome.tabs.onUpdated.addListener(checkIfTabIsZrIde);
+chrome.runtime.onInstalled.addListener(function(details) {
+    chrome.declarativeContent.onPageChanged.removeRules(undefined, function() {
+        chrome.declarativeContent.onPageChanged.addRules([{
+            conditions: [
+                new chrome.declarativeContent.PageStateMatcher({
+                    pageUrl: {
+                        hostEquals: 'zerorobotics.mit.edu',
+                        pathPrefix: '/ide'
+                    }
+                })
+            ],
+            actions: [new chrome.declarativeContent.ShowPageAction()]
+        }]);
+    });
+});
