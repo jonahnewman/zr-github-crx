@@ -6,7 +6,6 @@ import { Base64 } from 'js-base64';
 import config from '../../config.json';
 
 const request = promisify(browserRequest);
-var gh;
 
 chrome.runtime.onMessage.addListener(
   function(request, sender, sendResponse) {
@@ -15,19 +14,32 @@ chrome.runtime.onMessage.addListener(
       return;
     }
     console.log("received message", request);
-    if (gh) {
-       handleRequest(request.target, request.params, sendResponse);
-    }
-    else {
-        getAuth(() => {
-             handleRequest(request.target, request.params, sendResponse);
-        });
-    }
-   return true;
+    chrome.storage.local.get("token", (data) => {
+       if (data.token) {
+           var github = new GitHub({token: data.token});
+           github.getRepo(request.target.repo.user, request.target.repo.name).getDetails().then(
+             ()=> {
+               handleRequest(request.target, request.params, github, sendResponse);
+             },() => {
+               getAuth((resp) => {
+                  github = new GitHub({token: resp.token});
+                  handleRequest(request.target, request.params, github, sendResponse);
+               });
+             });
+       }
+       else {
+           getAuth((resp) => {
+               const github = new GitHub({token: resp.token});
+               handleRequest(request.target, request.params, github, sendResponse);
+           });
+       }
+    });
+    return true;
 });
 
-function handleRequest(target, params, cb) {
+function handleRequest(target, params, gh, cb) {
    var repo;
+   const request = promisify(browserRequest);
    if (target.repo) {
       if (gh && gh.__auth && gh.__auth.token) { 
          repo = gh.getRepo(target.repo.user, target.repo.name);
@@ -143,9 +155,8 @@ function getAuth(cb) {
 		console.log(err, response, body);
                 if (err) console.error(err);
                 console.log("using access token", body.access_token);
-		gh = new GitHub({token: body.access_token});
-		console.log(gh.getUser());
-		cb({ok: true});
+		chrome.storage.local.set({token: body.access_token});
+		cb({ok: true, token: body.access_token});
          });
       }
       else {

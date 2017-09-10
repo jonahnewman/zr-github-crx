@@ -4,7 +4,6 @@ function setDoc(doc) {
   var s = document.createElement('script');
   /**
    * Injected into ZR IDE page.
-   * Uses download functionality to get file as a string
    * Then sends it back to content script in a custom event
    */
   s.textContent = `

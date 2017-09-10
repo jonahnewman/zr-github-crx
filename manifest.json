@@ -8,7 +8,7 @@
     "scripts": [
       "event.js"
     ],
-    "persistent": true
+    "persistent": false
   },
   "page_action": {
     "default_title": "Github interface",
