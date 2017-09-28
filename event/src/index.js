@@ -101,9 +101,9 @@ function handleRequest(target, params, gh, cb) {
           var treeSHA;
           repo.getRef("heads/"+params.branch).then((ref) => {
               headSHA=ref.data.object.sha;
-              return request(ref.data.object.url);})
+              return repo.getCommit(headSHA);})
           .then((response) => {
-              const body = JSON.parse(response.body);
+              const body = response.data;
               commitHead.sha = body.sha;
               if (params.localSHA != commitHead.sha) {
                    cb({ok: false, reason: "oldsha"});
@@ -112,9 +112,10 @@ function handleRequest(target, params, gh, cb) {
                 commitHead.tree = body.tree;
                 repo.createBlob(params.text).then((blobData) => {
                     blobSHA = blobData.data.sha;
-                    return request(commitHead.tree.url);})
+                    debugger;
+                    return repo.getTree(commitHead.tree.sha);})
                 .then((response) => {
-                    treeSHA = JSON.parse(response.body).sha;
+                    treeSHA = response.data.sha;
                     return repo.createTree([{path:params.path, mode:"100644", type:"blob",
                          sha:blobSHA}], treeSHA);})
                 .then((newTreeData) => {

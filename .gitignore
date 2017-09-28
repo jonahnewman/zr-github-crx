@@ -2,3 +2,5 @@ config.json
 build/
 *.crx
 *.pem
+manifest.json
+*.png
