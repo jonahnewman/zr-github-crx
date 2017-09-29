@@ -51,7 +51,7 @@ gulp.task('copy-manifest', ['clean'], () => {
 });
 
 gulp.task('copy-icons', ['clean'], () => {
-  return gulp.src('*.png')
+  return gulp.src('./icons/*.png')
     .pipe(gulp.dest('./build'));
 });
 
