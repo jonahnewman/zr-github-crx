@@ -6,13 +6,15 @@ import config from '../../../../../config.json';
 class App extends Component {
   constructor(props) {
     super(props);
-    this.state = {branches: [{name:"master"}], commitMessage:"",
-       branch:{value:"master",label:"master"}, advanced:false};
+    this.state = {branches: [], commitMessage:"",
+       branch:{value:"master",label:"master"}, advanced: false};
     this.repo = config.repo;
     this.main = config.file;
     this.inProgressMap = {"commitInProgress":"commit",
        "newBranchInProgress":"creating branch", "pullInProgress":"retrieving file",
-       "mergeInProgress":"merge", "branchDeleteInProgress":"deleting branch","loginInProgress":"login"};
+       "mergeInProgress":"merge", "branchDeleteInProgress":"deleting branch","loginInProgress":"login",
+       "refreshBranchInProgress":"refreshing branches"};
+    this.refreshBranches = this.refreshBranches.bind(this);
     this.handleBranchChange = this.handleBranchChange.bind(this);
     this.handleCommitMessageChange = this.handleCommitMessageChange.bind(this);
     this.handleInputChange = this.handleInputChange.bind(this);
@@ -28,10 +30,7 @@ class App extends Component {
   
   componentWillMount() {
     chrome.runtime.onMessage.addListener(this.receiveMessage);
-    chrome.runtime.sendMessage({to:"bg", target:{action:"listBranches",repo:this.repo}},
-       (response) => {
-        this.setState({branches:response});
-    });
+    this.refreshBranches();
     chrome.storage.local.get(["ZRGithubBranch","ZRGithubRepo"], (data) => {
         const branch = data["ZRGithubBranch"];
         const repo = data["ZRGithubRepo"];
@@ -43,15 +42,22 @@ class App extends Component {
         		this.repo=repo;
       		 }
 	}
-       	chrome.runtime.sendMessage({to:"bg", target:{action:"listBranches",repo:this.repo}},
-       		(response) => {
-       			this.setState({branches:response});
-    	});
+       	this.refreshBranches();
     });
   }
 
   receiveMessage(message, sender, sendResponse) {
     if (message.to!="popup") return;
+  }
+
+  refreshBranches(noCache) {
+    if (this.state.refreshBranchInProgress) return;
+    this.setState({refreshBranchInProgress: true});
+    chrome.runtime.sendMessage({to:"bg", target:{action:"listBranches",repo:this.repo},
+      params:{noCache}},
+       (response) => {
+        this.setState({branches:response, refreshBranchInProgress: false});
+    });
   }
 
   handleBranchChange(value) {
@@ -94,7 +100,9 @@ class App extends Component {
                   + this.state.branch.value});
            }
            else if (response.reason == "oldsha") {
-                this.setState({status: `The file you are committing is not the most recent${                                  ""} in its branch. Pull the latest in a new tab, integrate your${                                            ""} changes, and then commit again.`});
+                this.setState({status: `The file you are committing is not the most recent${
+                                  ""} in its branch. Pull the latest in a new tab, integrate your${
+                                  ""} changes, and then commit again.`});
            }
            this.setState({commitInProgress: false});
        });
@@ -105,14 +113,20 @@ class App extends Component {
 
   handleNewBranchSubmit(event) {
     if (this.state.newBranchInProgress) { event.preventDefault();return; }
+    if (!this.state.fromBranch.value) {
+       this.setState({status:"Branches must be created from other branches. Make sure to select one."});
+       event.preventDefault(); return;
+    }
     this.setState({newBranchInProgress: true});
     chrome.runtime.sendMessage({to:"bg", target:{action:"createBranch",repo:this.repo},
        params:{newBranch: this.state.branch.value, oldBranch:this.state.fromBranch.value}},
         (response)=> {
             if (response.ok) {
-              this.setState({status:`Created branch ${response.branch}. ${
-                 ""}Pull to get latest.`, branches:this.state.branches.concat([{name:
-                 response.branch}]) });
+              this.setState({status:`Created branch ${response.branch}.`});
+              this.refreshBranches(true);
+            }
+            else {
+              this.setState({status: "Failed to create branch."});
             }
             this.setState({newBranchInProgress: false});
      });
@@ -180,23 +194,31 @@ class App extends Component {
     console.log(this.state);
     return (
       <div>
+        {this.state.branches.length == 0 ? <div>Loading branches...</div> :
         <div>
-            <h3 style={{margin:"0"}}>Active branch:</h3>
-            <Creatable
-               options={this.state.branches.map(e=>{return {label: e.name, value:e.name}})}
-               value = {this.state.branch} onChange={this.handleBranchChange}
-               clearValueText="Delete branch"
-               clearable={false}
-               promptTextCreator={(label)=>`Create branch "${label}"`} />
-            {this.state.branches.map(e=>e.name).includes(this.state.branch.value) ? null :
-              <form onSubmit={this.handleNewBranchSubmit}>
-                 From existing branch:
-                 <Select options={this.state.branches.map(e=>
-                        {return {label:e.name,value:e.name}})}
-                    onChange={this.handleFromBranchChange} value={this.state.fromBranch} />
-                 <input type="submit" value="create" />
-              </form>}
-	</div>
+          <h3 style={{margin:"0"}}>Active branch:</h3>
+            <div style={{display:"flex"}}>
+              <div style={{display:"flex", flexDirection:"column",flexGrow: "1"}}>
+                <Creatable
+                   options={this.state.branches.map(e=>{return {label: e.name, value:e.name}})}
+                   value = {this.state.branch} onChange={this.handleBranchChange}
+                   clearable={false}
+                   promptTextCreator={(label)=>`Create branch "${label}"`} />
+               {this.state.branches.map(e=>e.name).includes(this.state.branch.value) ? null :
+                 <form onSubmit={this.handleNewBranchSubmit}>
+                   From existing branch:
+                   <Select options={this.state.branches.map(e=>
+                          {return {label:e.name,value:e.name}})}
+                      onChange={this.handleFromBranchChange} value={this.state.fromBranch} />
+                   <input type="submit" value="create" />
+                </form>}
+             </div>
+             <div onClick={() => {this.refreshBranches(true)}}
+               style={{cursor:"pointer", fontSize: "x-large"}}>
+                &#128260;
+             </div>
+           </div>
+	</div>}
 	<div>
             <div style={{margin:"2px 0"}}>
   	       <form onSubmit={this.handleCommitSubmit}>

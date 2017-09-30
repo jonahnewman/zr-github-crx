@@ -54,12 +54,14 @@ function handleRequest(target, params, gh, cb) {
          getAuth(cb);
          break;
       case "listBranches":
-          repo.listBranches().then((branches) => {cb(branches.data);});
+          var url = `/repos/${repo.__fullname}/branches`;
+          if (params.noCache) url += `?noCache=${Math.random()}`;
+          repo._request('GET', url).then((branches) => {cb(branches.data);});
           break;
       case "createBranch":
           const oldB = params.oldBranch;
           const newB = params.newBranch;
-          repo.createBranch(oldB?oldB:newB, oldB?newB:null).then((commitData) => {
+          repo.createBranch(oldB?oldB:newB, oldB?newB:null).then((branchResponse) => {
             cb({ok: true, branch:newB});
           });
           break;
