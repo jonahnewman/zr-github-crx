@@ -172,8 +172,7 @@ chrome.runtime.onInstalled.addListener(function(details) {
             conditions: [
                 new chrome.declarativeContent.PageStateMatcher({
                     pageUrl: {
-                        hostEquals: 'zerorobotics.mit.edu',
-                        pathPrefix: '/ide'
+                        urlMatches: 'zerorobotics\.mit\.edu\/ide\/([^s]|s[^i]|si[^m]|sim[^u])'
                     }
                 })
             ],
