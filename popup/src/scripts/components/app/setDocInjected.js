@@ -12,7 +12,7 @@ function setDoc(doc) {
        .env.editor;
     console.log(aceEditSession, \`${doc}\`);
     aceEditSession.setValue(\`${doc}\`);
-    document.dispatchEvent(new CustomEvent('ZRGITHUB_extension_communication', {
+    document.dispatchEvent(new CustomEvent('ZRGITHUB_extension_communication_set', {
       ok: true
     }));
   `;
@@ -21,12 +21,14 @@ function setDoc(doc) {
       this.remove();
   };
   console.log("script tag", s);
-  (document.head || document.documentElement).appendChild(s);
   
-  document.addEventListener("ZRGITHUB_extension_communication", function(e) {
+  document.addEventListener("ZRGITHUB_extension_communication_set", function(e) {
     chrome.runtime.sendMessage({doc: e.detail}, function(response) {
       console.log(response);
     });
   });
+  
+  (document.head || document.documentElement).appendChild(s);
+
 }
 export default setDoc;

@@ -77,7 +77,9 @@ function handleRequest(target, params, gh, cb) {
       case "getContents":
           repo.getRef("heads/"+params.ref).then((ref) => {
              const sha = ref.data.object.sha;
-             repo.getContents(params.ref, params.path).then((response) => {
+             repo._request('GET', `/repos/${repo.__fullname}/contents/${
+               params.path ? `${encodeURI(params.path)}` : ''}?noCache=${Math.random()}`,
+               { ref: params.ref }).then((response) => {
                 const text = Base64.decode(response.data.content);
                 console.log("got text", text);
                 cb(`//${JSON.stringify({sha})}\n` + text);
@@ -101,6 +103,7 @@ function handleRequest(target, params, gh, cb) {
           var commitHead = {};
           var blobSHA;
           var treeSHA;
+          var newCommitSHA;
           repo.getRef("heads/"+params.branch).then((ref) => {
               headSHA=ref.data.object.sha;
               return repo.getCommit(headSHA);})
@@ -114,7 +117,6 @@ function handleRequest(target, params, gh, cb) {
                 commitHead.tree = body.tree;
                 repo.createBlob(params.text).then((blobData) => {
                     blobSHA = blobData.data.sha;
-                    debugger;
                     return repo.getTree(commitHead.tree.sha);})
                 .then((response) => {
                     treeSHA = response.data.sha;
@@ -123,8 +125,9 @@ function handleRequest(target, params, gh, cb) {
                 .then((newTreeData) => {
                     return repo.commit(commitHead.sha, newTreeData.data.sha, params.message);})
                 .then((commitData) => {
-                    return repo.updateHead("heads/"+params.branch, commitData.data.sha);})
-                .then(() => {cb({ok: true});});
+                    newCommitSHA = commitData.data.sha;
+                    return repo.updateHead("heads/"+params.branch, newCommitSHA);})
+                .then(() => {cb({ok: true, newCommitSHA});});
               } // assumes UTF-8
           });
           break;

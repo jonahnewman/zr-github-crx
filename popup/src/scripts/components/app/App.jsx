@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import getDoc, { setDoc } from './GetDocAsString.js';
+import { getDoc, setDoc } from './PageCommunication.js';
 import Select, { Creatable } from 'react-select';
 import config from '../../../../../config.json';
 
@@ -11,7 +11,7 @@ class App extends Component {
     this.repo = config.repo;
     this.main = config.file;
     this.inProgressMap = {"commitInProgress":"commit",
-       "newBranchInProgress":"creating branch", "pullInProgress":"retrieving file",
+       "newBranchInProgress":"creating branch", "fetchInProgress":"retrieving file",
        "mergeInProgress":"merge", "branchDeleteInProgress":"deleting branch","loginInProgress":"login",
        "refreshBranchInProgress":"refreshing branches"};
     this.refreshBranches = this.refreshBranches.bind(this);
@@ -22,7 +22,7 @@ class App extends Component {
     this.handleToMergeChange = this.handleToMergeChange.bind(this);
     this.handleCommitSubmit = this.handleCommitSubmit.bind(this);
     this.handleNewBranchSubmit = this.handleNewBranchSubmit.bind(this);
-    this.handlePullSubmit = this.handlePullSubmit.bind(this);
+    this.handleFetchSubmit = this.handleFetchSubmit.bind(this);
     this.handleMergeSubmit = this.handleMergeSubmit.bind(this);
     this.handleLoginSubmit = this.handleLoginSubmit.bind(this);
     this.handleRepoChangeSubmit = this.handleRepoChangeSubmit.bind(this);
@@ -31,17 +31,18 @@ class App extends Component {
   componentWillMount() {
     chrome.runtime.onMessage.addListener(this.receiveMessage);
     this.refreshBranches();
-    chrome.storage.local.get(["ZRGithubBranch","ZRGithubRepo"], (data) => {
-        const branch = data["ZRGithubBranch"];
-        const repo = data["ZRGithubRepo"];
-	if (branch || repo) {
-      		if (branch) {
-      			this.setState({branch});
-       		}
-      		if (repo) {
-        		this.repo=repo;
-      		 }
-	}
+    chrome.storage.local.get(["branch","repo","commitMessage"], (data) => {
+        const branch = data["branch"];
+        const repo = data["repo"];
+      	if (branch) {
+      		this.setState({branch});
+       	}
+      	if (repo) {
+       		this.repo=repo;
+      	}
+        if (data.commitMessage) {
+                this.setState({commitMessage: data.commitMessage});
+        }
        	this.refreshBranches();
     });
   }
@@ -63,7 +64,7 @@ class App extends Component {
   handleBranchChange(value) {
     if (!value) return;
     this.setState({branch:value});
-    chrome.storage.local.set({"ZRGithubBranch": value});
+    chrome.storage.local.set({"branch": value});
   }
 
   handleFromBranchChange(value) {
@@ -72,6 +73,7 @@ class App extends Component {
 
   handleCommitMessageChange(event) {
     this.setState({commitMessage: event.target.value});
+    chrome.storage.local.set({commitMessage: event.target.value});
   }
   
   handleInputChange(event) {
@@ -89,7 +91,7 @@ class App extends Component {
        event.preventDefault();return;
     }
     this.setState({commitInProgress: true});
-    console.log("fetching doc");
+    console.log("waiting on content script");
     getDoc().then((doc) => {
        console.log("got doc");
        chrome.runtime.sendMessage({to:"bg", target:{action:"commit",repo:this.repo},
@@ -97,16 +99,17 @@ class App extends Component {
            message:this.state.commitMessage, path:this.main}}, (response) => {
            if (response.ok) {
                this.setState({status: "successfully committed to "
-                  + this.state.branch.value});
+                  + this.state.branch.value, commitMessage: ""});
+               chrome.storage.local.set({commitMessage: ""});
+               setDoc(`//${JSON.stringify({sha:response.newCommitSHA})}\n${doc.text}`);
            }
            else if (response.reason == "oldsha") {
                 this.setState({status: `The file you are committing is not the most recent${
-                                  ""} in its branch. Pull the latest in a new tab, integrate your${
+                                  ""} in its branch. Fetch the latest in a new tab, integrate your${
                                   ""} changes, and then commit again.`});
            }
            this.setState({commitInProgress: false});
        });
-       this.setState({commitMessage:""});
     });
     event.preventDefault();
   }
@@ -133,14 +136,13 @@ class App extends Component {
     event.preventDefault();
   }
 
-  handlePullSubmit(event) {
-    if (this.state.pullInProgress) { event.preventDefault();return; }
-    this.setState({pullInProgress: true});
+  handleFetchSubmit(event) {
+    if (this.state.fetchInProgress) { event.preventDefault();return; }
+    this.setState({fetchInProgress: true});
     chrome.runtime.sendMessage({to:"bg", target:{action:"getContents",repo:this.repo},
       params:{ref:this.state.branch.value, path:this.main}}, (response) => {
         console.log(response);
-        this.setState({pullInProgress: false, status:`Retrieved document. It is possible that the browser${
-          ""} cached the file, in which case you may have to wait a minute to see the most recent version`});
+        this.setState({fetchInProgress: false, status:`Retrieved document.`});
         setDoc(response);
     });
     event.preventDefault();
@@ -184,7 +186,7 @@ class App extends Component {
  
   handleRepoChangeSubmit(event) {
     if (this.state.newRepoUser && this.state.newRepoName) {
-       chrome.storage.local.set({ZRGithubRepo:{user:this.state.newRepoUser, name:this.state.newRepoName}},
+       chrome.storage.local.set({repo:{user:this.state.newRepoUser, name:this.state.newRepoName}},
         () => {this.setState({status:`Repo is now ${this.state.newRepoUser}/${this.state.newRepoName}. Close and reopen popup`});} );
     }
     event.preventDefault();
@@ -225,13 +227,14 @@ class App extends Component {
 	           <label>
                      Commit message:
 	             <textarea value={this.state.commitMessage}
-                         onChange={this.handleCommitMessageChange} />
+                         onChange={this.handleCommitMessageChange}
+                         style={{height:"100px",width:"250px"}} />
 	           </label>
 	           <input type="submit" value="commit and push" />
  	       </form>
             </div>
-	    <form onSubmit={this.handlePullSubmit}>
-               <input type="submit" value="pull and overwrite" />
+	    <form onSubmit={this.handleFetchSubmit}>
+               <input type="submit" value="fetch and overwrite" />
             </form>
 	    <form onSubmit={this.handleMergeSubmit}>
                <div style={{display:"flex"}}>
