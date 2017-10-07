@@ -90,7 +90,12 @@ function handleRequest(target, params, gh, cb) {
          repo._request("POST", repo.__apiBase+"/repos/"+repo.__fullname+"/merges",
              {base:params.base, head:params.head})
          .then((resp) => {
-             cb({ok: true, message:resp.data.commit.message+" successful"});
+             if (resp.status=="200") {
+               cb({ok: true, message:resp.data.commit.message+" successful"});
+             }
+             else {
+               cb({ok:false});
+             }
            }, (err) => {
              console.log(err);
              if (err.message && err.message.startsWith("409")) {

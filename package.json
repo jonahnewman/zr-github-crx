@@ -12,7 +12,6 @@
     "browser-request": "^0.3.3",
     "es6-promisify": "^5.0.0",
     "github-api": "^3.0.0",
-    "halogen": "^0.2.0",
     "react": "^15.5.0",
     "react-chrome-redux": "0.0.7",
     "react-dom": "^15.5.0",

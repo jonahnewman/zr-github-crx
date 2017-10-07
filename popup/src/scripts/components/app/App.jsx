@@ -1,14 +1,15 @@
 import React, {Component} from 'react';
 import { getDoc, setDoc } from './PageCommunication.js';
-import Select, { Creatable } from 'react-select';
 import CommitMessage from '../commit/CommitMessage.jsx';
+import AdvancedOptions from '../advanced/AdvancedOptions.jsx';
+import BranchSwitcher, { BranchList } from '../branches/BranchSwitcher.jsx';
+import AuthStatus from '../auth/AuthStatus.jsx';
 import config from '../../../../../config.json';
 
 class App extends Component {
   constructor(props) {
     super(props);
-    this.state = {branches: [], commitMessage:"",
-       branch:{value:"master",label:"master"}, advanced: false};
+    this.state = {branches: [], commitMessage:"" };
     this.repo = config.repo;
     this.main = config.file;
     this.inProgressMap = {"commitInProgress":"commit",
@@ -18,7 +19,6 @@ class App extends Component {
     this.refreshBranches = this.refreshBranches.bind(this);
     this.handleBranchChange = this.handleBranchChange.bind(this);
     this.handleCommitMessageChange = this.handleCommitMessageChange.bind(this);
-    this.handleInputChange = this.handleInputChange.bind(this);
     this.handleFromBranchChange = this.handleFromBranchChange.bind(this);
     this.handleToMergeChange = this.handleToMergeChange.bind(this);
     this.handleCommitSubmit = this.handleCommitSubmit.bind(this);
@@ -30,7 +30,6 @@ class App extends Component {
   }
   
   componentWillMount() {
-    chrome.runtime.onMessage.addListener(this.receiveMessage);
     this.refreshBranches();
     chrome.storage.local.get(["branch","repo"], (data) => {
         const branch = data["branch"];
@@ -45,10 +44,6 @@ class App extends Component {
     });
   }
 
-  receiveMessage(message, sender, sendResponse) {
-    if (message.to!="popup") return;
-  }
-
   refreshBranches(noCache) {
     if (this.state.refreshBranchInProgress) return;
     this.setState({refreshBranchInProgress: true});
@@ -60,7 +55,6 @@ class App extends Component {
   }
 
   handleBranchChange(value) {
-    if (!value) return;
     this.setState({branch:value});
     chrome.storage.local.set({"branch": value});
   }
@@ -92,11 +86,11 @@ class App extends Component {
     getDoc().then((doc) => {
       console.log("got doc");
       chrome.runtime.sendMessage({to:"bg", target:{action:"commit",repo:this.repo},
-         params:{branch:this.state.branch.value, text:doc.text, localSHA:doc.head.sha,
+         params:{branch:this.state.branch, text:doc.text, localSHA:doc.head.sha,
           message:this.state.commitMessage, path:this.main}}, (response) => {
           if (response.ok) {
               this.setState({status: "successfully committed to "
-                 + this.state.branch.value, commitMessage: ""});
+                 + this.state.branch, commitMessage: ""});
               chrome.storage.local.set({commitMessage: ""});
               setDoc(`//${JSON.stringify({sha:response.newCommitSHA})}\n${doc.text}`);
           }
@@ -120,13 +114,13 @@ class App extends Component {
 
   handleNewBranchSubmit(event) {
     if (this.state.newBranchInProgress) { event.preventDefault();return; }
-    if (!this.state.fromBranch.value) {
+    if (!this.state.fromBranch) {
        this.setState({status:"Branches must be created from other branches. Make sure to select one."});
        event.preventDefault(); return;
     }
     this.setState({newBranchInProgress: true});
     chrome.runtime.sendMessage({to:"bg", target:{action:"createBranch",repo:this.repo},
-       params:{newBranch: this.state.branch.value, oldBranch:this.state.fromBranch.value}},
+       params:{newBranch: this.state.branch, oldBranch:this.state.fromBranch}},
         (response)=> {
             if (response.ok) {
               this.setState({status:`Created branch ${response.branch}.`});
@@ -144,7 +138,7 @@ class App extends Component {
     if (this.state.fetchInProgress) { event.preventDefault();return; }
     this.setState({fetchInProgress: true});
     chrome.runtime.sendMessage({to:"bg", target:{action:"getContents",repo:this.repo},
-      params:{ref:this.state.branch.value, path:this.main}}, (response) => {
+      params:{ref:this.state.branch, path:this.main}}, (response) => {
         console.log(response);
         this.setState({fetchInProgress: false, status:`Retrieved document.`});
         setDoc(response);
@@ -160,7 +154,7 @@ class App extends Component {
     }
     this.setState({mergeInProgress: true});
     chrome.runtime.sendMessage({to:"bg", target:{action:"merge",repo:this.repo},
-      params:{base:this.state.branch.value, head:this.state.toMerge.value}}, (response) => {
+      params:{base:this.state.branch, head:this.state.toMerge}}, (response) => {
          if (response.ok) {
             this.setState({status: "Merge succeeded"});
          }
@@ -175,7 +169,8 @@ class App extends Component {
   handleLoginSubmit(event) {
     if (this.state.loginInProgress) { event.preventDefault();return; }
     this.setState({loginInProgress: true});
-    chrome.runtime.sendMessage({to:"bg", target:{action:"login"}}, (response) => {
+    chrome.runtime.sendMessage({to:"bg", target:{action:"login",repo:this.repo}},
+     (response) => {
        console.log(response);
        if (response.ok) {
           this.setState({status: "Logged in successfully"});
@@ -188,10 +183,10 @@ class App extends Component {
     event.preventDefault();
   }
  
-  handleRepoChangeSubmit(event) {
-    if (this.state.newRepoUser && this.state.newRepoName) {
-       chrome.storage.local.set({repo:{user:this.state.newRepoUser, name:this.state.newRepoName}},
-        () => {this.setState({status:`Repo is now ${this.state.newRepoUser}/${this.state.newRepoName}. Close and reopen popup`});} );
+  handleRepoChangeSubmit(repoUser, repoName) {
+    if (repoUser && repoName) {
+       chrome.storage.local.set({repo:{user:repoUser, name:repoName}},
+        () => {this.setState({status:`Repo is now ${repoUser}/${repoName}. Close and reopen popup`});} );
     }
     event.preventDefault();
   }
@@ -200,31 +195,15 @@ class App extends Component {
     console.log(this.state);
     return (
       <div>
-        {this.state.branches.length == 0 ? <div>Loading branches...</div> :
-        <div>
-          <h3 style={{margin:"0"}}>Active branch:</h3>
-            <div style={{display:"flex"}}>
-              <div style={{display:"flex", flexDirection:"column",flexGrow: "1"}}>
-                <Creatable
-                   options={this.state.branches.map(e=>{return {label: e.name, value:e.name}})}
-                   value = {this.state.branch} onChange={this.handleBranchChange}
-                   clearable={false}
-                   promptTextCreator={(label)=>`Create branch "${label}"`} />
-               {this.state.branches.map(e=>e.name).includes(this.state.branch.value) ? null :
-                 <form onSubmit={this.handleNewBranchSubmit}>
-                   From existing branch:
-                   <Select options={this.state.branches.map(e=>
-                          {return {label:e.name,value:e.name}})}
-                      onChange={this.handleFromBranchChange} value={this.state.fromBranch} />
-                   <input type="submit" value="create" />
-                </form>}
-             </div>
-             <div onClick={() => {this.refreshBranches(true)}}
-               style={{cursor:"pointer", fontSize: "x-large"}}>
-                &#128260;
-             </div>
-           </div>
-	</div>}
+        <AuthStatus repo={this.repo} />
+        <BranchSwitcher
+          branch={this.state.branch}
+          branches={this.state.branches}
+          updateFunc={this.handleBranchChange}
+          refreshBranches={this.refreshBranches}
+          createBranch={this.handleNewBranchSubmit}
+          fromBranch={this.state.fromBranch}
+          fromBranchUpdate={this.handleFromBranchChange} />
 	<div>
             <div style={{margin:"2px 0"}}>
   	       <form onSubmit={this.handleCommitSubmit}>
@@ -241,30 +220,17 @@ class App extends Component {
                <div style={{display:"flex"}}>
                   <div> <input type="submit" value="merge with:" /> </div>
                   <div style={{flexGrow:"1"}}>
-                     <Select options={this.state.branches.map(e=>
-                        {return {label:e.name, value:e.name}})}
-                        onChange={this.handleToMergeChange} value={this.state.toMerge} />
-                  </div>
+                    <BranchList value={this.state.toMerge}
+                      branches={this.state.branches}
+                      updateFunc={this.handleToMergeChange} />
+                 </div>
                </div>
             </form>
 	</div>
-	      <div> <button onClick={()=>{this.setState({advanced:!this.state.advanced})}}>advanced</button> </div>
-        {this.state.advanced?<div>
-           <form onSubmit={this.handleLoginSubmit}>
-             <input type="submit" value="manual login" />
-           </form>
-           <div>{`${this.repo.user}/${this.repo.name}`}</div>
-           <form onSubmit={this.handleRepoChangeSubmit}>
-             <div style={{display:"flex"}}>
-                <input type="text" onChange={this.handleInputChange} name="newRepoUser"
-                    style={{width:"70px"}} />
-                {"/"}
-                <input type="text" onChange={this.handleInputChange} name="newRepoName"
-                    style={{width:"70px"}} />
-                <input type="submit" value="change repo" />
-             </div>
-           </form>
-        </div>:null}
+        <AdvancedOptions 
+          repoFullName={`${this.repo.user}/${this.repo.name}`}
+          login={this.handleLoginSubmit}
+          changeRepo={this.handleRepoChangeSubmit} /> 
         <div>
 	    {this.state.status}
 	</div>

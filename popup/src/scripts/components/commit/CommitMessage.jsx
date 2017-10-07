@@ -22,7 +22,6 @@ class CommitMessage extends Component {
   }
 
   render() {
-    console.log("state",this.state,"props",this.props);
     const firstNewLineIndex = this.props.commitMessage.indexOf('\n');
     const title = this.props.commitMessage.substr(0,firstNewLineIndex);
     const body = this.props.commitMessage.substr(firstNewLineIndex+1);
