@@ -2,8 +2,7 @@
   "manifest_version": 2,
   "name": "ZR Github",
   "description": "This extension adds Github capabilities to the ZR website",
-  "version": "1.0",
-  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApDJ5LHhlYifpCwD9DU2z64dOjPLP8CR9pBwgD+SBsrzryqPH9D4ZWIk1NN9ISUGiu7VN2fb2FPZk1I62JwuS5Yvz3aCQjRMf3Emem66k6JxpmwejGqhe5U850WY3GGIHoVvqQHpg/9A9pZiMfjyl0MeuXvXLfMHn5Pw9RoNu4TyfZWaageXfkErX+saQ+H2dpx1qTJ7Li/O1Dxk3X6rZI9sLQVDfQj0c4VDpKcx9dB5PzKMSh+v1mUv+BGPWujgqrGq6+Gyf9C+7DtbfOb1E2kvPrWrRSr1Dks5jyDgbt+wDWtFO1wFmCMf6f4qF/RabT8fTm7Sw/hvceCLxRpg2YwIDAQAB",
+  "version": "0.1.0",
   "background": {
     "scripts": [
       "event.js"
@@ -21,5 +20,5 @@
     "declarativeContent",
     "http://www.zerorobotics.mit.edu/",
     "https://github.com/"
-  ]
+  ],
 }

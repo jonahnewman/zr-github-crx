@@ -1,6 +1,13 @@
+# stuff that is personal to your version of the extension
+# (OAuth2 secrets, icons, etc.)
 config.json
-build/
-*.crx
-*.pem
 manifest.json
 *.png
+
+# relics of gulp and npm
+build/
+node_modules/
+
+# packaged extensions or keys
+*.crx
+*.pem
