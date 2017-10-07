@@ -177,7 +177,7 @@ chrome.runtime.onInstalled.addListener(function(details) {
             conditions: [
                 new chrome.declarativeContent.PageStateMatcher({
                     pageUrl: {
-                        urlMatches: 'zerorobotics\.mit\.edu\/ide\/([^s]|s[^i]|si[^m]|sim[^u])'
+                        urlMatches: 'zerorobotics\.mit\.edu\/ide\/.{10}[^\/]'
                     }
                 })
             ],

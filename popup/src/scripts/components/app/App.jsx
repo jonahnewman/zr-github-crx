@@ -1,6 +1,7 @@
 import React, {Component} from 'react';
 import { getDoc, setDoc } from './PageCommunication.js';
 import Select, { Creatable } from 'react-select';
+import CommitMessage from '../commit/CommitMessage.jsx';
 import config from '../../../../../config.json';
 
 class App extends Component {
@@ -31,7 +32,7 @@ class App extends Component {
   componentWillMount() {
     chrome.runtime.onMessage.addListener(this.receiveMessage);
     this.refreshBranches();
-    chrome.storage.local.get(["branch","repo","commitMessage"], (data) => {
+    chrome.storage.local.get(["branch","repo"], (data) => {
         const branch = data["branch"];
         const repo = data["repo"];
       	if (branch) {
@@ -40,10 +41,7 @@ class App extends Component {
       	if (repo) {
        		this.repo=repo;
       	}
-        if (data.commitMessage) {
-                this.setState({commitMessage: data.commitMessage});
-        }
-       	this.refreshBranches();
+      	this.refreshBranches();
     });
   }
 
@@ -71,9 +69,8 @@ class App extends Component {
      this.setState({fromBranch:value});
   }
 
-  handleCommitMessageChange(event) {
-    this.setState({commitMessage: event.target.value});
-    chrome.storage.local.set({commitMessage: event.target.value});
+  handleCommitMessageChange(newMessage) {
+    this.setState({commitMessage: newMessage});
   }
   
   handleInputChange(event) {
@@ -93,23 +90,30 @@ class App extends Component {
     this.setState({commitInProgress: true});
     console.log("waiting on content script");
     getDoc().then((doc) => {
-       console.log("got doc");
-       chrome.runtime.sendMessage({to:"bg", target:{action:"commit",repo:this.repo},
-          params:{branch:this.state.branch.value, text:doc.text, localSHA:doc.head.sha,
-           message:this.state.commitMessage, path:this.main}}, (response) => {
-           if (response.ok) {
-               this.setState({status: "successfully committed to "
-                  + this.state.branch.value, commitMessage: ""});
-               chrome.storage.local.set({commitMessage: ""});
-               setDoc(`//${JSON.stringify({sha:response.newCommitSHA})}\n${doc.text}`);
-           }
-           else if (response.reason == "oldsha") {
-                this.setState({status: `The file you are committing is not the most recent${
-                                  ""} in its branch. Fetch the latest in a new tab, integrate your${
-                                  ""} changes, and then commit again.`});
-           }
-           this.setState({commitInProgress: false});
-       });
+      console.log("got doc");
+      chrome.runtime.sendMessage({to:"bg", target:{action:"commit",repo:this.repo},
+         params:{branch:this.state.branch.value, text:doc.text, localSHA:doc.head.sha,
+          message:this.state.commitMessage, path:this.main}}, (response) => {
+          if (response.ok) {
+              this.setState({status: "successfully committed to "
+                 + this.state.branch.value, commitMessage: ""});
+              chrome.storage.local.set({commitMessage: ""});
+              setDoc(`//${JSON.stringify({sha:response.newCommitSHA})}\n${doc.text}`);
+          }
+          else if (response.reason == "oldsha") {
+               this.setState({status: `The file you are committing is not the most recent${
+                                ""} in its branch. Fetch the latest in a new tab, integrate your${
+                                ""} changes, and then commit again.`});
+          }
+          this.setState({commitInProgress: false});
+      });
+    }, (error) => {
+      if (error.reason=="nosha") {
+         this.setState({commitInProgress: false, status: `This doc does not${
+                               ""} contain a valid SHA at the top.${
+                               ""} Fetch the branch you would like to commit to in${
+                               ""} a new tab.`});
+       } 
     });
     event.preventDefault();
   }
@@ -224,12 +228,9 @@ class App extends Component {
 	<div>
             <div style={{margin:"2px 0"}}>
   	       <form onSubmit={this.handleCommitSubmit}>
-	           <label>
-                     Commit message:
-	             <textarea value={this.state.commitMessage}
-                         onChange={this.handleCommitMessageChange}
-                         style={{height:"100px",width:"250px"}} />
-	           </label>
+	           <CommitMessage
+                     commitMessage={this.state.commitMessage}
+                     updateFunc={this.handleCommitMessageChange} />
 	           <input type="submit" value="commit and push" />
  	       </form>
             </div>

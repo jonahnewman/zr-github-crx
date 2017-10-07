@@ -13,8 +13,14 @@ function getDoc() {
       function(request, sender, sendResponse) {
         console.log("received doc from injected script", request.doc);
         var cleanDoc = request.doc.replace(/\n\/\/End page.*\n|\/\/Begin page .*\n/g, "");
-        resolve({text: cleanDoc.replace(/^\/\/.*sha.*\n/, ""), 
-            head: JSON.parse(cleanDoc.match(/^\/\/(.*)/)[1])});
+        var headMatch = cleanDoc.match(/^\/\/(.*)/);
+        try {
+          var head = JSON.parse(headMatch[1]); // [1] is the capture group
+          resolve({text: cleanDoc.replace(/^\/\/.*sha.*\n/, ""), head});
+        }
+        catch (e) {
+          reject({reason: "nosha"});
+        }
         sendResponse({ok:true});
       });
   });
