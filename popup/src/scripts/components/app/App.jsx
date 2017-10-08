@@ -4,6 +4,7 @@ import CommitMessage from '../commit/CommitMessage.jsx';
 import AdvancedOptions from '../advanced/AdvancedOptions.jsx';
 import BranchSwitcher, { BranchList } from '../branches/BranchSwitcher.jsx';
 import AuthStatus from '../auth/AuthStatus.jsx';
+import Diff from '../ace-diff/Diff.jsx';
 import config from '../../../../../config.json';
 
 class App extends Component {
@@ -77,7 +78,7 @@ class App extends Component {
 
   handleCommitSubmit(event) {
     if (this.state.commitInProgress) { event.preventDefault();return; }
-    if (!this.state.commitMessage) {
+    if (!this.state.commitMessage.replace(/\s/g, '')) {
        this.setState({status: "No commit message"});
        event.preventDefault();return;
     }
@@ -141,7 +142,7 @@ class App extends Component {
       params:{ref:this.state.branch, path:this.main}}, (response) => {
         console.log(response);
         this.setState({fetchInProgress: false, status:`Retrieved document.`});
-        setDoc(response);
+        setDoc(response.text);
     });
     event.preventDefault();
   }
@@ -231,6 +232,7 @@ class App extends Component {
           repoFullName={`${this.repo.user}/${this.repo.name}`}
           login={this.handleLoginSubmit}
           changeRepo={this.handleRepoChangeSubmit} /> 
+        <Diff branch={this.state.branch} repo={this.repo} path={this.main} />
         <div>
 	    {this.state.status}
 	</div>

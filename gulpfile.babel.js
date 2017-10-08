@@ -44,11 +44,16 @@ gulp.task('copy-icons', ['clean'], () => {
     .pipe(gulp.dest('./build'));
 });
 
+gulp.task('copy-ace-diff', ['clean'], () => {
+  return gulp.src('./ace-diff/*')
+    .pipe(gulp.dest('./build/ace-diff/'));
+});
+
 gulp.task('clean', (cb) => {
   rimraf('./build', cb);
 });
 
-gulp.task('build', ['copy-manifest', 'copy-icons', 'popup-js', 'popup-html', 'event-js']);
+gulp.task('build', ['copy-manifest', 'copy-icons', 'popup-js', 'popup-html', 'event-js', 'copy-ace-diff']);
 
 gulp.task('watch', ['default'], () => {
   gulp.watch('popup/**/*', ['build']);

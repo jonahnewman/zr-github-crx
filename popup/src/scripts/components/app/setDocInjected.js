@@ -8,7 +8,7 @@ function setDoc(doc) {
    */
   s.textContent = `
     console.log("injected script is running");
-    var aceEditSession = document.querySelectorAll('[ui-ace="aceOptions"]')[0]
+    var aceEditSession = document.querySelector('[ui-ace="aceOptions"]')
        .env.editor;
     console.log(aceEditSession, \`${doc}\`);
     aceEditSession.setValue(\`${doc}\`);

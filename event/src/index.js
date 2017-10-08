@@ -82,7 +82,7 @@ function handleRequest(target, params, gh, cb) {
                { ref: params.ref }).then((response) => {
                 const text = Base64.decode(response.data.content);
                 console.log("got text", text);
-                cb(`//${JSON.stringify({sha})}\n` + text);
+                cb({ok:true, text:`//${JSON.stringify({sha})}\n` + text});
              });
           });
           break;
