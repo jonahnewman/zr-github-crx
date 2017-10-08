@@ -4,7 +4,7 @@ import CommitMessage from '../commit/CommitMessage.jsx';
 import AdvancedOptions from '../advanced/AdvancedOptions.jsx';
 import BranchSwitcher, { BranchList } from '../branches/BranchSwitcher.jsx';
 import AuthStatus from '../auth/AuthStatus.jsx';
-import Diff from '../ace-diff/Diff.jsx';
+import Merge from '../ace-diff/Merge.jsx';
 import config from '../../../../../config.json';
 
 class App extends Component {
@@ -15,24 +15,24 @@ class App extends Component {
     this.main = config.file;
     this.inProgressMap = {"commitInProgress":"commit",
        "newBranchInProgress":"creating branch", "fetchInProgress":"retrieving file",
-       "mergeInProgress":"merge", "branchDeleteInProgress":"deleting branch","loginInProgress":"login",
+       "branchDeleteInProgress":"deleting branch","loginInProgress":"login",
        "refreshBranchInProgress":"refreshing branches"};
     this.refreshBranches = this.refreshBranches.bind(this);
+    this.setStatus = this.setStatus.bind(this);
     this.handleBranchChange = this.handleBranchChange.bind(this);
     this.handleCommitMessageChange = this.handleCommitMessageChange.bind(this);
     this.handleFromBranchChange = this.handleFromBranchChange.bind(this);
-    this.handleToMergeChange = this.handleToMergeChange.bind(this);
+    this.handleMergeBaseChange = this.handleMergeBaseChange.bind(this);
     this.handleCommitSubmit = this.handleCommitSubmit.bind(this);
     this.handleNewBranchSubmit = this.handleNewBranchSubmit.bind(this);
     this.handleFetchSubmit = this.handleFetchSubmit.bind(this);
-    this.handleMergeSubmit = this.handleMergeSubmit.bind(this);
     this.handleLoginSubmit = this.handleLoginSubmit.bind(this);
     this.handleRepoChangeSubmit = this.handleRepoChangeSubmit.bind(this);
   }
   
   componentWillMount() {
     this.refreshBranches();
-    chrome.storage.local.get(["branch","repo"], (data) => {
+    chrome.storage.local.get(["branch","repo","merge"], (data) => {
         const branch = data["branch"];
         const repo = data["repo"];
       	if (branch) {
@@ -41,6 +41,10 @@ class App extends Component {
       	if (repo) {
        		this.repo=repo;
       	}
+        if (data.merge) {
+          this.setState({merging:data.merge.merging,
+            mergeBase: data.merge.base});
+        }
       	this.refreshBranches();
     });
   }
@@ -53,6 +57,10 @@ class App extends Component {
        (response) => {
         this.setState({branches:response, refreshBranchInProgress: false});
     });
+  }
+
+  setStatus(text) {
+    this.setState({status: text});
   }
 
   handleBranchChange(value) {
@@ -72,8 +80,10 @@ class App extends Component {
     this.setState({[event.target.name]: event.target.value});
   }
 
-  handleToMergeChange(value) {
-    this.setState({toMerge: value});
+  handleMergeBaseChange(value) {
+    this.setState({mergeBase: value, merging: value? true : false});
+    chrome.storage.local.set({merge: {merging: value?true:false,
+      base: value}});
   }
 
   handleCommitSubmit(event) {
@@ -87,12 +97,13 @@ class App extends Component {
     getDoc().then((doc) => {
       console.log("got doc");
       chrome.runtime.sendMessage({to:"bg", target:{action:"commit",repo:this.repo},
-         params:{branch:this.state.branch, text:doc.text, localSHA:doc.head.sha,
+         params:{branch:this.state.branch, base: this.state.merging? this.state.mergeBase: null,
+          text:doc.text, localSHA:doc.head.sha,
           message:this.state.commitMessage, path:this.main}}, (response) => {
           if (response.ok) {
               this.setState({status: "successfully committed to "
-                 + this.state.branch, commitMessage: ""});
-              chrome.storage.local.set({commitMessage: ""});
+                 + this.state.branch, commitMessage: "", merging: false});
+              chrome.storage.local.set({commitMessage: "", merge: {merging: false}});
               setDoc(`//${JSON.stringify({sha:response.newCommitSHA})}\n${doc.text}`);
           }
           else if (response.reason == "oldsha") {
@@ -147,26 +158,6 @@ class App extends Component {
     event.preventDefault();
   }
 
-  handleMergeSubmit(event) {
-    if (this.state.mergeInProgress) { event.preventDefault();return; }
-    if (!this.state.toMerge) {
-      this.setState({status: "Must select branch with which to merge"});
-      event.preventDefault();return;
-    }
-    this.setState({mergeInProgress: true});
-    chrome.runtime.sendMessage({to:"bg", target:{action:"merge",repo:this.repo},
-      params:{base:this.state.branch, head:this.state.toMerge}}, (response) => {
-         if (response.ok) {
-            this.setState({status: "Merge succeeded"});
-         }
-         else if (response.reason=="conflict") {
-            this.setState({status: "Merge conflict: must merge manually"});
-         }
-         this.setState({mergeInProgress: false});
-    });
-    event.preventDefault();
-  }
- 
   handleLoginSubmit(event) {
     if (this.state.loginInProgress) { event.preventDefault();return; }
     this.setState({loginInProgress: true});
@@ -214,25 +205,19 @@ class App extends Component {
 	           <input type="submit" value="commit and push" />
  	       </form>
             </div>
-	    <form onSubmit={this.handleFetchSubmit}>
+	    {this.state.merging? null: <form onSubmit={this.handleFetchSubmit}>
                <input type="submit" value="fetch and overwrite" />
-            </form>
-	    <form onSubmit={this.handleMergeSubmit}>
-               <div style={{display:"flex"}}>
-                  <div> <input type="submit" value="merge with:" /> </div>
-                  <div style={{flexGrow:"1"}}>
-                    <BranchList value={this.state.toMerge}
-                      branches={this.state.branches}
-                      updateFunc={this.handleToMergeChange} />
-                 </div>
-               </div>
-            </form>
+            </form>}
 	</div>
+        <Merge repo={this.repo} path={this.main} merging={this.state.merging}
+          setStatus={this.setStatus} base={this.state.mergeBase}
+          updateBaseSHA={this.handleMergeBaseChange}
+          updateMerging={(s) => {this.setState({merging:s}) }}
+          branches={this.state.branches} setStatus={this.setStatus} />
         <AdvancedOptions 
           repoFullName={`${this.repo.user}/${this.repo.name}`}
           login={this.handleLoginSubmit}
           changeRepo={this.handleRepoChangeSubmit} /> 
-        <Diff branch={this.state.branch} repo={this.repo} path={this.main} />
         <div>
 	    {this.state.status}
 	</div>

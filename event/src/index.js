@@ -86,23 +86,6 @@ function handleRequest(target, params, gh, cb) {
              });
           });
           break;
-      case "merge":
-         repo._request("POST", repo.__apiBase+"/repos/"+repo.__fullname+"/merges",
-             {base:params.base, head:params.head})
-         .then((resp) => {
-             if (resp.status=="200") {
-               cb({ok: true, message:resp.data.commit.message+" successful"});
-             }
-             else {
-               cb({ok:false});
-             }
-           }, (err) => {
-             console.log(err);
-             if (err.message && err.message.startsWith("409")) {
-             cb({ok: false, reason: "conflict"});
-           }
-         });
-         break;
       case "commit":
           var headSHA;
           var commitHead = {};
@@ -128,7 +111,14 @@ function handleRequest(target, params, gh, cb) {
                     return repo.createTree([{path:params.path, mode:"100644", type:"blob",
                          sha:blobSHA}], treeSHA);})
                 .then((newTreeData) => {
-                    return repo.commit(commitHead.sha, newTreeData.data.sha, params.message);})
+                     return repo._request('POST', `/repos/${repo.__fullname}/git/commits`, 
+                      {tree: newTreeData.data.sha, message: params.message,
+                      parents: params.base? [commitHead.sha, params.base] : [commitHead.sha] })
+                      .then((response) => {
+                        repo.__currentTree.sha = response.data.sha; // Update latest commit
+                        return response;
+                      });
+                 })
                 .then((commitData) => {
                     newCommitSHA = commitData.data.sha;
                     return repo.updateHead("heads/"+params.branch, newCommitSHA);})
