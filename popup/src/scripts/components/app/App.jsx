@@ -152,7 +152,8 @@ class App extends Component {
     chrome.runtime.sendMessage({to:"bg", target:{action:"getContents",repo:this.repo},
       params:{ref:this.state.branch, path:this.main}}, (response) => {
         console.log(response);
-        this.setState({fetchInProgress: false, status:`Retrieved document.`});
+        this.setState({fetchInProgress: false, status:`Retrieved document.${
+         ""} Press ctrl+z in the editor to undo.`});
         setDoc(response.text);
     });
     event.preventDefault();

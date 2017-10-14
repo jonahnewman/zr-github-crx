@@ -7,7 +7,6 @@ class BranchSwitcher extends Component {
   }
 
   render() {
-    console.log("switcher props", this.props);
     return (
       <div>
         <h3 style={{margin:"0"}}>Active branch:</h3>
@@ -17,8 +16,9 @@ class BranchSwitcher extends Component {
             <BranchList 
               branches={this.props.branches} value={this.props.branch}
               updateFunc={this.props.updateFunc}
-              promptTextCreator={(label)=>`create branch "${label}"`} />
-            {this.props.branches.map(e=>e.name).includes(this.props.branch) ? null :
+              promptTextCreator={(label)=>`new branch "${label}"`} />
+            {this.props.branches.map(e=>e.name).includes(this.props.branch)
+              || this.props.branch == "" ? null :
              <form onSubmit={this.props.createBranch}>
                from existing branch:
                <BranchList
@@ -47,7 +47,6 @@ class BranchList extends Component {
   }
 
   render() {
-    console.log("list props", this.props);
     const options = this.props.branches.map(e=>{return {label: e.name, value:e.name}});
     const onChange = (change) => { this.props.updateFunc(change.value) };
     const value = {label:this.props.value, value:this.props.value};
@@ -60,6 +59,8 @@ class BranchList extends Component {
                 options={options} value = {value}
                 onChange={onChange}
                 clearable={false}
+                isValidNewOption={(branch) =>
+                  branch.label && branch.label.indexOf(" ")==-1 }
                 promptTextCreator={this.props.promptTextCreator} />
             :
               <Select 
