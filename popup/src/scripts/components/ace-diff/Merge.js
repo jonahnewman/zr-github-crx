@@ -18,10 +18,12 @@ function showDiff(head) {
     flexContainer.id = "flex-container";
     var leftEditor = document.createElement('div');
     leftEditor.id = 'diff-left-editor';
+    leftEditor.style.height = "100%";
     var gutter = document.createElement('div');
     gutter.id = 'diff-gutter';
     var rightEditor = document.createElement('div');
     rightEditor.id = 'diff-right-editor';
+    rightEditor.style.height = "100%";
     flexContainer.appendChild(leftEditor);
     flexContainer.appendChild(gutter);
     flexContainer.appendChild(rightEditor);
