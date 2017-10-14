@@ -55,7 +55,7 @@ class App extends Component {
     chrome.runtime.sendMessage({to:"bg", target:{action:"listBranches",repo:this.repo},
       params:{noCache}},
        (response) => {
-        this.setState({branches:response, refreshBranchInProgress: false});
+        this.setState({branches:response.branches, refreshBranchInProgress: false});
     });
   }
 

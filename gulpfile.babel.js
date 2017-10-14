@@ -7,6 +7,7 @@ const plugins = loadPlugins();
 
 import popupWebpackConfig from './popup/webpack.config';
 import eventWebpackConfig from './event/webpack.config';
+import contentWebpackConfig from './content/webpack.config';
 
 gulp.task('popup-js', ['clean'], (cb) => {
   webpack(popupWebpackConfig, (err, stats) => {
@@ -20,6 +21,16 @@ gulp.task('popup-js', ['clean'], (cb) => {
 
 gulp.task('event-js', ['clean'], (cb) => {
   webpack(eventWebpackConfig, (err, stats) => {
+    if(err) throw new plugins.util.PluginError('webpack', err);
+
+    plugins.util.log('[webpack]', stats.toString());
+
+    cb();
+  });
+});
+
+gulp.task('content-js', ['clean'], (cb) => {
+  webpack(contentWebpackConfig, (err, stats) => {
     if(err) throw new plugins.util.PluginError('webpack', err);
 
     plugins.util.log('[webpack]', stats.toString());
@@ -53,11 +64,13 @@ gulp.task('clean', (cb) => {
   rimraf('./build', cb);
 });
 
-gulp.task('build', ['copy-manifest', 'copy-icons', 'popup-js', 'popup-html', 'event-js', 'copy-ace-diff']);
+gulp.task('build', ['copy-manifest', 'copy-icons', 'popup-js',
+  'popup-html', 'event-js', 'content-js', 'copy-ace-diff']);
 
 gulp.task('watch', ['default'], () => {
   gulp.watch('popup/**/*', ['build']);
   gulp.watch('event/**/*', ['build']);
+  gulp.watch('content/**/*', ['build']);
 });
 
 gulp.task('default', ['build']);

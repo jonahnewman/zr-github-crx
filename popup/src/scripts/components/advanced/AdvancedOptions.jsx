@@ -6,14 +6,29 @@ class AdvancedOptions extends Component {
     this.state = {show: false};
     this.handleInputChange = this.handleInputChange.bind(this);
     this.handleRepoChange = this.handleRepoChange.bind(this);
+    this.toggleBranchMenu = this.toggleBranchMenu.bind(this);
   }
  
+  componentWillMount() {
+    chrome.storage.local.get("showSimBranchMenu", (data) => {
+      this.setState({showMenu: data.showSimBranchMenu});
+    });
+  }
+
   handleInputChange(event) {
     this.setState({[event.target.name]: event.target.value});
   }
 
   handleRepoChange() {
     this.props.changeRepo(this.state.newRepoUser, this.state.newRepoName);
+  }
+
+  toggleBranchMenu(event) {
+    chrome.storage.local.get("showSimBranchMenu", (data) => {
+      chrome.storage.local.set({showSimBranchMenu:!data.showSimBranchMenu});
+      this.setState({showMenu:!data.showSimBranchMenu});
+    });
+    event.preventDefault();
   }
 
   render() {
@@ -35,6 +50,11 @@ class AdvancedOptions extends Component {
                      style={{width:"70px"}} autoComplete="off" />
                  <input type="submit" value="change repo" />
               </div>
+            </form>
+            <form onSubmit={this.toggleBranchMenu}>
+              Branch drop-down in simulation dialog is
+              {this.state.showMenu ? " on" : " off"}
+              <input type="submit" value={this.state.showMenu?"turn off":"turn on"} /> 
             </form>
           </div>
         : null}

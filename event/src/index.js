@@ -9,7 +9,7 @@ const request = promisify(browserRequest);
 
 chrome.runtime.onMessage.addListener(
   function(request, sender, sendResponse) {
-    if (sender.tab || request.to!="bg" || !request.target) {
+    if (request.to!="bg" || !request.target) {
       console.log("This message is not for me");
       return;
     }
@@ -55,8 +55,10 @@ function handleRequest(target, params, gh, cb) {
          break;
       case "listBranches":
           var url = `/repos/${repo.__fullname}/branches`;
-          if (params.noCache) url += `?noCache=${Math.random()}`;
-          repo._request('GET', url).then((branches) => {cb(branches.data);});
+          if (params && params.noCache) url += `?noCache=${Math.random()}`;
+          repo._request('GET', url).then((branches) => {
+            cb({ok:true, branches: branches.data});
+          });
           break;
       case "createBranch":
           const oldB = params.oldBranch;

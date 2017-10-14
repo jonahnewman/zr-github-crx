@@ -9,6 +9,12 @@
     ],
     "persistent": false
   },
+  "content_scripts": [
+    {
+      "matches": ["http://www.zerorobotics.mit.edu/ide/*"],
+      "js": ["content.js"]
+    }
+  ],
   "page_action": {
     "default_title": "Github interface",
     "default_popup": "popup.html"
