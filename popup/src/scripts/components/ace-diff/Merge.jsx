@@ -9,7 +9,7 @@ class Merge extends Component {
     this.startDiff = this.startDiff.bind(this);
     this.stopDiff = this.stopDiff.bind(this);
     this.updateBase = this.updateBase.bind(this);
-    this.state = {base: ""};
+    this.state = {base: "", mergeDialogOpen: false};
   }
  
   updateBase(newBase) {
@@ -51,6 +51,7 @@ class Merge extends Component {
       });
     });
     this.props.setStatus("");
+    this.setState({mergeDialogOpen: false});
   }
 
   render() {
@@ -65,15 +66,22 @@ class Merge extends Component {
             <input type="submit" value="Abort merge" />
           </form>
         :
-          <form onSubmit={this.startDiff}>
-            <div style={{display:"flex"}}>
-              <div><input type="submit" value="merge with: " /></div>
-              <div style={{flexGrow:"1"}}>
-                <BranchList value={this.state.base} branches={this.props.branches}
-                  updateFunc={this.updateBase} />
-              </div>
-            </div>
-          </form>
+          <div>
+            <input type="button" value="merge" onClick={() => 
+              {this.setState({mergeDialogOpen: true}) }} />
+            {this.state.mergeDialogOpen ?
+              <form onSubmit={this.startDiff}>
+                <div style={{display:"flex"}}>
+                  <span> with branch </span>
+                  <div style={{flexGrow:"1"}}>
+                    <BranchList value={this.state.base} branches={this.props.branches}
+                      updateFunc={this.updateBase} />
+                  </div>
+                  <div><input type="submit" value="start merge" /></div>
+                </div>
+              </form>
+            : null }
+          </div>
         }
       </div>
     );
