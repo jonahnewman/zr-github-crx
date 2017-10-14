@@ -1,14 +1,15 @@
 {
-  "name": "rcr-example",
+  "name": "zr-github",
   "version": "0.0.1",
-  "private": true,
-  "description": "",
+  "private": false,
+  "description": "Provides GitHub functionality on the Zero Robotics IDE",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Tyler Shaddix",
+  "author": "Jonah Weissman",
   "dependencies": {
     "babel": "^6.23.0",
+    "babel-register": "^6.26.0",
     "browser-request": "^0.3.3",
     "es6-promisify": "^5.0.0",
     "github-api": "^3.0.0",
