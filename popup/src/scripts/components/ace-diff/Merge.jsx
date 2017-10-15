@@ -29,7 +29,7 @@ class Merge extends Component {
      return;
    }
    this.props.updateMerging(true);
-   query({action:"getContents",repo:this.props.repo},
+   query("getContents",
       {ref:this.state.base, path:this.props.path})
     .then((response) => {
       this.props.updateBaseSHA(JSON.parse(response.text.match(/^\/\/(.+)/)[1]).sha);

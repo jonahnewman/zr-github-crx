@@ -1,3 +1,7 @@
+/**
+ * This is the core of the popup window UI. All the UI components are used
+ * in this component's render function.
+ */
 import React, {Component} from 'react';
 import { getDoc, setDoc } from './PageCommunication.js';
 import CommitMessage from '../commit/CommitMessage.jsx';
@@ -148,6 +152,10 @@ class App extends Component {
 
   handleFetchSubmit(event) {
     if (this.state.fetchInProgress) { event.preventDefault();return; }
+    if (!this.state.branch) {
+      this.setStatus("Select a branch first.");
+      event.preventDefault(); return;
+    }
     this.setState({fetchInProgress: true});
     chrome.runtime.sendMessage({to:"bg", target:{action:"getContents",repo:this.repo},
       params:{ref:this.state.branch, path:this.main}}, (response) => {

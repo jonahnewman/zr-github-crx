@@ -11,7 +11,8 @@
   },
   "content_scripts": [
     {
-      "matches": ["http://www.zerorobotics.mit.edu/ide/*"],
+      "matches": ["http://zerorobotics.mit.edu/ide/*"],
+      "exclude_matches": ["http://zerorobotics.mit.edu/ide/simulation/*"],
       "js": ["content.js"]
     }
   ],
@@ -29,5 +30,5 @@
   ],
   "web_accessible_resources": [
     "ace-diff/*"
-  ],
+  ]
 }

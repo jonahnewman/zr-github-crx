@@ -5,7 +5,7 @@ chrome.storage.local.get("showSimBranchMenu", (data) => {
   console.log("show menu", data.showSimBranchMenu);
   if (data.showSimBranchMenu) {
     const simulateButton = document.querySelector('[ng-click="openSimDialog()"]');
-    query({action:"listBranches", repo:config.repo}).then((response) => {
+    query("listBranches").then((response) => {
       simulateButton.addEventListener("click", () => {
         setTimeout(() => {addMenu(response.branches)}, 100)
       });
@@ -51,7 +51,7 @@ function addMenu(branches) {
 }
 
 function pickGithubOpponent(branch) {
-  query({action:"getContents", repo:config.repo}, {ref:branch, path:config.file})
+  query("getContents", {ref:branch, path:config.file})
   .then((data) => {
     console.log(data);
     var s = document.createElement('script');

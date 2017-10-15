@@ -15,7 +15,7 @@ chrome.runtime.onMessage.addListener(
     }
     console.log("received message", request);
     chrome.storage.local.get("token", (data) => {
-       if (data.token) {
+       if (data.token || request.target.action=="checkAuth") {
            var github = new GitHub({token: data.token});
            github.getRepo(request.target.repo.user, request.target.repo.name).getDetails().then(
              ()=> {
@@ -70,11 +70,15 @@ function handleRequest(target, params, gh, cb) {
       case "deleteRef":
           repo.deleteRef("heads/"+params.branch).then((response) => cb({ok: true}));
           break;
-      case "createHook":
-          //const options = { name:"web", active:true, events:params.events, config:{
-          //repo.createHook(options).then((response) => {
-          //    console.log(
-          //});
+      case "checkAuth":
+          var user = (new GitHub(repo.__auth)).getUser();
+          user.getProfile()
+          .then((response) => {
+              cb({ok: true, login:response.data.login});
+              return repo.getDetails();
+          })
+          .then((data) => {
+          });
           break;
       case "getContents":
           repo.getRef("heads/"+params.ref).then((ref) => {
