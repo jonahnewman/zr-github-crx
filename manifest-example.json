@@ -25,7 +25,7 @@
     "identity",
     "storage",
     "declarativeContent",
-    "http://www.zerorobotics.mit.edu/",
+    "http://zerorobotics.mit.edu/",
     "https://github.com/"
   ],
   "web_accessible_resources": [

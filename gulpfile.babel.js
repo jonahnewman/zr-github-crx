@@ -56,7 +56,9 @@ gulp.task('copy-icons', ['clean'], () => {
 });
 
 gulp.task('copy-ace-diff', ['clean'], () => {
-  return gulp.src('./ace-diff/*')
+  return gulp.src(['./node_modules/ace-diff/dist/*',
+    './node_modules/ace-diff/libs/*',
+    './node_modules/ace-diff/demos/demo2/styles.css'])
     .pipe(gulp.dest('./build/ace-diff/'));
 });
 

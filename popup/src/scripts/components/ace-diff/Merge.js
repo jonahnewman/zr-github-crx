@@ -17,12 +17,12 @@ function showDiff(head) {
     var flexContainer = document.createElement('div');
     flexContainer.id = "flex-container";
     var leftEditor = document.createElement('div');
-    leftEditor.id = 'diff-left-editor';
+    leftEditor.id = 'editor1';
     leftEditor.style.height = "100%";
     var gutter = document.createElement('div');
-    gutter.id = 'diff-gutter';
+    gutter.id = 'gutter';
     var rightEditor = document.createElement('div');
-    rightEditor.id = 'diff-right-editor';
+    rightEditor.id = 'editor2';
     rightEditor.style.height = "100%";
     flexContainer.appendChild(leftEditor);
     flexContainer.appendChild(gutter);
@@ -44,17 +44,17 @@ function showDiff(head) {
       var aceDiffer = new AceDiff({
         mode: "ace/mode/c_cpp",
         left: {
-            id: "diff-left-editor",
+            id: "editor1",
             content: oldEditor.getValue(),
             copyLinkEnabled: false
         },
         right: {
-            id: "diff-right-editor",
+            id: "editor2",
             content: "${scrubbedHead}",
             editable: false,
         },
         classes: {
-            gutterID: "diff-gutter"
+            gutterID: "gutter"
         }
       });
       
