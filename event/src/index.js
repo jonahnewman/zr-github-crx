@@ -15,20 +15,21 @@ chrome.runtime.onMessage.addListener(
     }
     console.log("received message", request);
     chrome.storage.local.get("token", (data) => {
-       if (data.token || request.target.action=="checkAuth") {
+       if(request.target.action=="checkAuth"||request.target.action=="login") {
+           handleRequest(request.target, request.params,
+              new GitHub({token: data.token ? data.token : null}), sendResponse);
+       }
+       else if (data.token) {
            var github = new GitHub({token: data.token});
            github.getRepo(request.target.repo.user, request.target.repo.name).getDetails().then(
              ()=> {
                handleRequest(request.target, request.params, github, sendResponse);
              },() => {
-               getAuth((resp) => {
-                  github = new GitHub({token: resp.token});
-                  handleRequest(request.target, request.params, github, sendResponse);
-               });
+               sendResponse({ok: false, reason:"noauth"});  
              });
        }
        else {
-           getAuth((resp) => {
+           getAuth().then((resp) => {
                const github = new GitHub({token: resp.token});
                handleRequest(request.target, request.params, github, sendResponse);
            });
@@ -41,12 +42,7 @@ function handleRequest(target, params, gh, cb) {
    var repo;
    const request = promisify(browserRequest);
    if (target.repo) {
-      if (gh && gh.__auth && gh.__auth.token) { 
-         repo = gh.getRepo(target.repo.user, target.repo.name);
-      }
-      else{
-         cb({ok: false});
-      }
+      repo = gh.getRepo(target.repo.user, target.repo.name);
    }
    console.log("performing action", target.action);
    switch(target.action) {
@@ -73,8 +69,16 @@ function handleRequest(target, params, gh, cb) {
       case "checkAuth":
           var user = (new GitHub(repo.__auth)).getUser();
           user.getProfile()
+          .catch(() => {
+              cb({ok:false});
+          })
           .then((response) => {
-              cb({ok: true, login:response.data.login});
+              if (response) {
+                cb({ok: true, login:response.data.login});
+              }
+              else {
+                cb({ok: false});
+              }
               return repo.getDetails();
           })
           .then((data) => {
@@ -135,7 +139,8 @@ function handleRequest(target, params, gh, cb) {
    }
 }
          
-function getAuth(cb) {
+function getAuth() {
+  return new Promise((resolve, reject) => {
     const client_id = config.client_id;
     const redirect_uri = chrome.identity.getRedirectURL('/cb');
     const scope = "repo";
@@ -151,7 +156,7 @@ function getAuth(cb) {
          const respState = response.match(paramRE("state"))[1];
          if (state != respState) {
             console.error("State does not match; something's not right. Aborting.");
-            cb({ok:false});
+            reject({ok:false});
             return;
          }
          const parameters = {client_id: client_id,
@@ -163,14 +168,15 @@ function getAuth(cb) {
                 if (err) console.error(err);
                 console.log("using access token", body.access_token);
 		chrome.storage.local.set({token: body.access_token});
-		cb({ok: true, token: body.access_token});
+		resolve({ok: true, token: body.access_token});
          });
       }
       else {
          console.error("Invalid response from github authorization", response);
-         cb({ok:false});
+         reject({ok:false});
       }
     });
+  });
 }
 chrome.runtime.onInstalled.addListener(function(details) {
     chrome.declarativeContent.onPageChanged.removeRules(undefined, function() {

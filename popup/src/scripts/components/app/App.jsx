@@ -31,12 +31,11 @@ class App extends Component {
     this.handleCommitSubmit = this.handleCommitSubmit.bind(this);
     this.handleNewBranchSubmit = this.handleNewBranchSubmit.bind(this);
     this.handleFetchSubmit = this.handleFetchSubmit.bind(this);
-    this.handleLoginSubmit = this.handleLoginSubmit.bind(this);
     this.handleRepoChangeSubmit = this.handleRepoChangeSubmit.bind(this);
+    this.handleActiveUserChange = this.handleActiveUserChange.bind(this);
   }
-  
+ 
   componentWillMount() {
-    this.refreshBranches();
     chrome.storage.local.get(["branch","repo","merge"], (data) => {
         const branch = data["branch"];
         const repo = data["repo"];
@@ -50,7 +49,7 @@ class App extends Component {
           this.setState({merging:data.merge.merging,
             mergeBase: data.merge.base});
         }
-      	this.refreshBranches();
+      	if (this.state.activeUser) this.refreshBranches();
     });
   }
 
@@ -87,12 +86,17 @@ class App extends Component {
 
   handleMergeBaseSHAChange(value) {
     this.setState({mergeBaseSHA: value, merging: value? true : false});
-     }
+  }
  
   handleMergeBaseChange(value) {
     this.setState({mergeBase: value});
     chrome.storage.local.set({merge: {merging: value?true:false,
       base: value}});
+  }
+
+  handleActiveUserChange(value) {
+    this.setState({activeUser: value});
+    this.refreshBranches(true);
   }
 
   handleCommitSubmit(event) {
@@ -171,23 +175,6 @@ class App extends Component {
     });
     event.preventDefault();
   }
-
-  handleLoginSubmit(event) {
-    if (this.state.loginInProgress) { event.preventDefault();return; }
-    this.setState({loginInProgress: true});
-    chrome.runtime.sendMessage({to:"bg", target:{action:"login",repo:this.repo}},
-     (response) => {
-       console.log(response);
-       if (response.ok) {
-          this.setState({status: "Logged in successfully"});
-       }
-       else {
-          this.setState({status: "Login failed"});
-       }
-       this.setState({loginInProgress: false});
-    });
-    event.preventDefault();
-  }
  
   handleRepoChangeSubmit(repoUser, repoName) {
     if (repoUser && repoName) {
@@ -201,7 +188,10 @@ class App extends Component {
     console.log(this.state);
     return (
       <div>
-        <AuthStatus repo={this.repo} />
+        <AuthStatus
+          user={this.state.activeUser}
+          updateUser={this.handleActiveUserChange}
+          repo={this.repo} />
         <BranchSwitcher
           branch={this.state.branch}
           branches={this.state.branches}
@@ -232,7 +222,9 @@ class App extends Component {
           setStatus={this.setStatus} baseSHA={this.state.mergeBaseSHA}
           base={this.state.mergeBase} updateBase={this.handleMergeBaseChange}
           updateBaseSHA={this.handleMergeBaseSHAChange}
-          updateMerging={(s) => {this.setState({merging:s}) }}
+          updateMerging={(s) => {
+            this.setState({merging:s});
+            if (!s) this.handleMergeBaseChange(null); }}
           branches={this.state.branches} setStatus={this.setStatus} />
         <AdvancedOptions 
           repoFullName={`${this.repo.user}/${this.repo.name}`}
@@ -250,7 +242,6 @@ class App extends Component {
                 return a;
               }, "")}
         </div>
-  
       </div>
     );
   }

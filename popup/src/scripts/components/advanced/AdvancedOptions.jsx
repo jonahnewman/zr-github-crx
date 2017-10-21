@@ -37,9 +37,6 @@ class AdvancedOptions extends Component {
         <button onClick={()=>{this.setState({show:!this.state.show})}}>advanced</button>
         {this.state.show?
           <div>
-            <form onSubmit={this.props.login}>
-              <input type="submit" value="manual login" />
-            </form>
             <div>{`Will push to ${this.props.repoFullName}`}</div>
             <form onSubmit={this.handleRepoChange}>
               <div style={{display:"flex"}}>

@@ -6,7 +6,7 @@ import query from '../../eventApi.js';
 class AuthStatus extends Component {
   constructor(props) {
     super(props);
-    this.state = {user: null};
+    this.login = this.login.bind(this);
     this.checkAuth = this.checkAuth.bind(this);
   }
 
@@ -15,7 +15,7 @@ class AuthStatus extends Component {
   }
 
   login(event) {
-    query("login").then(this.checkAuth);
+    query("login").then(this.checkAuth, this.checkAuth);
     event.preventDefault();
   }
 
@@ -24,15 +24,15 @@ class AuthStatus extends Component {
     query("checkAuth")
     .then((response) => {
       console.log("auth",response);
-      this.setState({user: response.login});
+      this.props.updateUser(response.login);
     });
   }
 
   render() {
     return (
       <div style={{display:"flex",justifyContent:"flex-end"}}>
-        {this.state.user ?
-          <span>Logged in as {this.state.user}</span>
+        {this.props.user ?
+          <span>Logged in as {this.props.user}</span>
         :
           <form onSubmit={this.login}>
             <input type="submit" value="Log in" />
