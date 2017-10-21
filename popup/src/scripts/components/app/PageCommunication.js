@@ -1,18 +1,18 @@
 import setDocInjected from "./setDocInjected.js";
 import getDocInjected from "./getDocInjected.js";
 /**
- * Gets the value of the document
+ * Returns a promise to get the value of the document
  */
 function getDoc() {
   return new Promise((resolve, reject) => {
-    chrome.tabs.executeScript({code:""+getDocInjected+"getDoc();"});
+    chrome.tabs.executeScript({code:getDocInjected+"getDoc();"});
     console.log("waiting on injected script");
     var port = chrome.runtime.connect();
 
     chrome.runtime.onMessage.addListener(
       function(request, sender, sendResponse) {
         console.log("received doc from injected script", request.doc);
-        var cleanDoc = request.doc.replace(/\n\/\/End page.*\n|\/\/Begin page .*\n/g, "");
+        var cleanDoc = request.doc;
         var headMatch = cleanDoc.match(/^\/\/(.*)/);
         try {
           var head = JSON.parse(headMatch[1]); // [1] is the capture group
@@ -26,10 +26,14 @@ function getDoc() {
   });
 }
 
+/**
+ * Sets the value of the document
+ */
 function setDoc(doc) {
   return new Promise((resolve, reject) => {
-    console.log(""+setDocInjected);
-    chrome.tabs.executeScript({code:""+setDocInjected+`console.log("tet");setDoc(\`${doc}\`)`});
+    const scrubbedDoc = doc.replace(/`/g, '\\`');
+    console.log(scrubbedDoc);
+    chrome.tabs.executeScript({code:setDocInjected+`setDoc(\`${scrubbedDoc}\`)`});
     
     var port = chrome.runtime.connect();
     
