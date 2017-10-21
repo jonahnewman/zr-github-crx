@@ -26,6 +26,7 @@ class App extends Component {
     this.handleBranchChange = this.handleBranchChange.bind(this);
     this.handleCommitMessageChange = this.handleCommitMessageChange.bind(this);
     this.handleFromBranchChange = this.handleFromBranchChange.bind(this);
+    this.handleMergeBaseSHAChange = this.handleMergeBaseSHAChange.bind(this);
     this.handleMergeBaseChange = this.handleMergeBaseChange.bind(this);
     this.handleCommitSubmit = this.handleCommitSubmit.bind(this);
     this.handleNewBranchSubmit = this.handleNewBranchSubmit.bind(this);
@@ -84,8 +85,12 @@ class App extends Component {
     this.setState({[event.target.name]: event.target.value});
   }
 
+  handleMergeBaseSHAChange(value) {
+    this.setState({mergeBaseSHA: value, merging: value? true : false});
+     }
+ 
   handleMergeBaseChange(value) {
-    this.setState({mergeBase: value, merging: value? true : false});
+    this.setState({mergeBase: value});
     chrome.storage.local.set({merge: {merging: value?true:false,
       base: value}});
   }
@@ -101,7 +106,7 @@ class App extends Component {
     getDoc().then((doc) => {
       console.log("got doc");
       chrome.runtime.sendMessage({to:"bg", target:{action:"commit",repo:this.repo},
-         params:{branch:this.state.branch, base: this.state.merging? this.state.mergeBase: null,
+         params:{branch:this.state.branch, base: this.state.merging? this.state.mergeBaseSHA: null,
           text:doc.text, localSHA:doc.head.sha,
           message:this.state.commitMessage, path:this.main}}, (response) => {
           if (response.ok) {
@@ -203,6 +208,7 @@ class App extends Component {
           updateFunc={this.handleBranchChange}
           refreshBranches={this.refreshBranches}
           createBranch={this.handleNewBranchSubmit}
+          disabled={this.state.merging}
           fromBranch={this.state.fromBranch}
           fromBranchUpdate={this.handleFromBranchChange} />
 	<div>
@@ -210,17 +216,22 @@ class App extends Component {
   	       <form onSubmit={this.handleCommitSubmit}>
 	           <CommitMessage
                      commitMessage={this.state.commitMessage}
+                     enforcedTitle={this.state.merging?
+                       `Merge ${this.state.mergeBase} into ${this.state.branch}`
+                       : null}
                      updateFunc={this.handleCommitMessageChange} />
 	           <input type="submit" value="commit and push" />
  	       </form>
             </div>
-	    {this.state.merging? null: <form onSubmit={this.handleFetchSubmit}>
-               <input type="submit" value="fetch and overwrite" />
-            </form>}
+	    <form onSubmit={this.handleFetchSubmit}>
+               <input type="submit" value="fetch and overwrite"
+                 disabled={this.state.merging} />
+            </form>
 	</div>
         <Merge repo={this.repo} path={this.main} merging={this.state.merging}
-          setStatus={this.setStatus} base={this.state.mergeBase}
-          updateBaseSHA={this.handleMergeBaseChange}
+          setStatus={this.setStatus} baseSHA={this.state.mergeBaseSHA}
+          base={this.state.mergeBase} updateBase={this.handleMergeBaseChange}
+          updateBaseSHA={this.handleMergeBaseSHAChange}
           updateMerging={(s) => {this.setState({merging:s}) }}
           branches={this.state.branches} setStatus={this.setStatus} />
         <AdvancedOptions 

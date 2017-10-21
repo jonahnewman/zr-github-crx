@@ -1,6 +1,9 @@
 import React, {Component} from 'react';
 import Select, { Creatable } from 'react-select';
-
+/**
+ * This is the drop down that is labled "Active branch"
+ * this document also contains a more generic branch switcher
+ */
 class BranchSwitcher extends Component {
   constructor(props) {
     super(props);
@@ -16,9 +19,10 @@ class BranchSwitcher extends Component {
             <BranchList 
               branches={this.props.branches} value={this.props.branch}
               updateFunc={this.props.updateFunc}
+              disabled={this.props.disabled}
               promptTextCreator={(label)=>`new branch "${label}"`} />
             {this.props.branches.map(e=>e.name).includes(this.props.branch)
-              || this.props.branch == "" ? null :
+              || this.props.branch == "" || !this.props.branches ? null :
              <form onSubmit={this.props.createBranch}>
                from existing branch:
                <BranchList
@@ -40,6 +44,8 @@ class BranchSwitcher extends Component {
 /**
  * @prop value
  * @prop branches
+ * @prop updateFunc {function} - updates value
+ * @prop disabled
  */
 class BranchList extends Component {
   constructor(props) {
@@ -59,6 +65,7 @@ class BranchList extends Component {
                 options={options} value = {value}
                 onChange={onChange}
                 clearable={false}
+                disabled={this.props.disabled}
                 isValidNewOption={(branch) =>
                   branch.label && branch.label.indexOf(" ")==-1 }
                 promptTextCreator={this.props.promptTextCreator} />
@@ -66,6 +73,7 @@ class BranchList extends Component {
               <Select 
                 options={options} value={value}
                 clearable={false}
+                disabled={this.props.disabled}
                 onChange={onChange} />}
 	  </div>}
       </div>

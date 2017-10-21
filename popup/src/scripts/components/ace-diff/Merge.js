@@ -80,7 +80,7 @@ function showDiff(head) {
       console.log("content_script: stop diffing!!1!");
       document.dispatchEvent(new CustomEvent('ZRGITHUB_extension_communication_stopdiff'), {});
       codebox.style.display = "inherit";
-      flexContainer.remove();
+      setTimeout(() => {flexContainer.remove()}, 50);
     }
   }); 
   (document.head || document.documentElement).appendChild(s);

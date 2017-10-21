@@ -11,20 +11,36 @@ class CommitMessage extends Component {
       if (data.commitMessage) {
         this.props.updateFunc(data.commitMessage);
       }
+      if (this.props.enforcedTitle) {
+        this.props.updateFunc(this.props.enforcedTitle);
+      }
     });
   }
   
+  componentWillReceiveProps(nextProps) {
+    if (!this.props.enforcedTitle && nextProps.enforcedTitle) {
+      this.props.updateFunc(nextProps.enforcedTitle);
+    }
+    if (this.props.enforcedTitle && !nextProps.enforcedTitle) {
+      this.props.updateFunc(
+        this.props.commitMessage.replace(this.props.enforcedTitle, ""));
+    }
+  }
+
   handleChange() {
-    const newMessage = this.titleTextarea.value.replace('\n', '')
-      + '\n' + this.bodyTextarea.value;
+    var newMessage = this.props.enforcedTitle ? this.props.enforcedTitle
+      : this.titleTextarea.value.replace('\n', '');
+    newMessage += '\n' + this.bodyTextarea.value;
     chrome.storage.local.set({commitMessage: newMessage});
     this.props.updateFunc(newMessage);
   }
 
   render() {
-    const firstNewLineIndex = this.props.commitMessage.indexOf('\n');
-    const title = this.props.commitMessage.substr(0,firstNewLineIndex);
-    const body = this.props.commitMessage.substr(firstNewLineIndex+1);
+    const message = this.props.commitMessage ? this.props.commitMessage : "";
+    const firstNewLineIndex = message.indexOf('\n');
+    const title = message.substr(0, firstNewLineIndex!=-1 ? firstNewLineIndex
+      : message.length);
+    const body = firstNewLineIndex!=-1 ? message.substr(firstNewLineIndex+1) : "";
     return (
       <div>
         <textarea value={title}
@@ -32,6 +48,7 @@ class CommitMessage extends Component {
           onChange={this.handleChange}
           style={{height:"20px", width:"calc(100% - 6px)", resize:"none"}}
           placeholder="Title: briefly summarize your changes"
+          disabled={this.props.enforcedTitle ? true : false}
           maxLength="50" />
         <textarea value={body}
           ref={(textarea) => { this.bodyTextarea = textarea; }}

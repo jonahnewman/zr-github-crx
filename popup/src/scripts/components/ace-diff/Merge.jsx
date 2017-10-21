@@ -8,12 +8,7 @@ class Merge extends Component {
     super(props);
     this.startDiff = this.startDiff.bind(this);
     this.stopDiff = this.stopDiff.bind(this);
-    this.updateBase = this.updateBase.bind(this);
-    this.state = {base: "", mergeDialogOpen: false};
-  }
- 
-  updateBase(newBase) {
-    this.setState({base: newBase});
+    this.state = {mergeDialogOpen: false};
   }
 
   componentWillReceiveProps(nextProps) {
@@ -24,13 +19,13 @@ class Merge extends Component {
   }
 
   startDiff(event) {
-   if (this.props.merging || !this.state.base) {
+   if (this.props.merging || !this.props.base) {
      event.preventDefault();
      return;
    }
    this.props.updateMerging(true);
    query("getContents",
-      {ref:this.state.base, path:this.props.path})
+      {ref:this.props.base, path:this.props.path})
     .then((response) => {
       this.props.updateBaseSHA(JSON.parse(response.text.match(/^\/\/(.+)/)[1]).sha);
       var scrubbed = response.text.replace(/"/g,'\\\"');
@@ -38,7 +33,8 @@ class Merge extends Component {
       scrubbed = scrubbed.replace(/'/g, "\\'");
       chrome.tabs.executeScript({code: ContentScript
       + includeExtensionFile+"showDiff(\'"+scrubbed+"\');"});
-      this.props.setStatus(`Merging with commit ${this.props.base+'\n'}Commit or abort to stop`);
+      this.props.setStatus(`Merging with ${this.props.base+'\n'
+        }. Commit when complete or abort to stop`);
     });
     event.preventDefault();
   }
@@ -74,8 +70,8 @@ class Merge extends Component {
                 <div style={{display:"flex"}}>
                   <span> with branch </span>
                   <div style={{flexGrow:"1"}}>
-                    <BranchList value={this.state.base} branches={this.props.branches}
-                      updateFunc={this.updateBase} />
+                    <BranchList value={this.props.base} branches={this.props.branches}
+                      updateFunc={this.props.updateBase} />
                   </div>
                   <div><input type="submit" value="start merge" /></div>
                 </div>
