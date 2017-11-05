@@ -75,6 +75,13 @@ You should now have a folder called `build`.
 5. Find "ZR Github" in the list of extensions. Below `details` it should say `ID: *a bunch of letters*`. Copy the ID. 
 6. Go back to your [OAuth Applicatons](https://github.com/settings/developers) page on GitHub. Change the "Authorization callback URL" to `https://YOUR_EXTENSION_ID.chromiumapp.org/cb`. Click "Update application."
 
+## Using the extension on Windows and macOS
+On Windows and macOS, Chrome will disable the extension by default. The only workaround is to load the extension unpacked. 
+Normally, when an extension is loaded unpacked, Chrome will give it a random ID. However, this extension relies on a static key for the GitHub OAuth callback, so we must specify the key field in `manifest.json`. [This Chrome article explains](https://developer.chrome.com/apps/manifest/key):
+>To get a suitable key value, first install your extension from a .crx file (you may need to upload your extension or package it manually). Then, in your user data directory, look in the file Default/Extensions/<extensionId>/<versionString>/manifest.json. You will see the key value filled in there.
+
+Add the key value to `manifest.json`, then click "Load unpacked extension..." in the chrome://extensions developer options and select your `build` folder.
+
 # Usage
 Installation complete! You can now use your extension.
 ## Make a commit
