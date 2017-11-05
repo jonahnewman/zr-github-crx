@@ -16,8 +16,9 @@ NPM (Node Package Manager) is essential for dealing with all the libraries in th
 * Windows: http://blog.teamtreehouse.com/install-node-js-npm-windows
 * Linux: http://blog.teamtreehouse.com/install-node-js-npm-linux
 
-Once you have NPM, `cd` to the repo folder. You will need to install all the packages:
+Once you have NPM, you will need to install all the packages that the extension uses:
 ```
+cd zr-github-crx # or wherever you cloned this repository
 npm install
 ```
 Now, you must install the task-runner Gulp:
