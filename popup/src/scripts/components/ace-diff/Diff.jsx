@@ -3,7 +3,7 @@ import ContentScript, {includeExtensionFile} from './Merge.js';
 import query from '../../eventApi.js';
 import { BranchList } from '../branches/BranchSwitcher.jsx';
 
-class Merge extends Component {
+class Diff extends Component {
   constructor(props) {
     super(props);
     this.startDiff = this.startDiff.bind(this);
@@ -63,7 +63,7 @@ class Merge extends Component {
           </form>
         :
           <div>
-            <input type="button" value="merge" onClick={() => 
+            <input type="button" value="diff" onClick={() => 
               {this.setState({mergeDialogOpen: true}) }} />
             {this.state.mergeDialogOpen ?
               <form onSubmit={this.startDiff}>
@@ -84,4 +84,4 @@ class Merge extends Component {
   }
 }
 
-export default Merge;
+export default Diff;

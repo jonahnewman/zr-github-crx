@@ -4,6 +4,7 @@ import browserRequest from 'browser-request';
 import GitHub from 'github-api';
 import { Base64 } from 'js-base64';
 import config from '../../config.json';
+import * as diff3 from 'node-diff3';
 
 const request = promisify(browserRequest);
 
@@ -51,7 +52,7 @@ function handleRequest(target, params, gh, cb) {
          break;
       case "listBranches":
           var url = `/repos/${repo.__fullname}/branches`;
-          if (params && params.noCache) url += `?noCache=${Math.random()}`;
+          if (params && params.noCache) url += `?timestamp=${Date.now()}`;
           repo._request('GET', url).then((branches) => {
             cb({ok:true, branches: branches.data});
           });
@@ -62,9 +63,6 @@ function handleRequest(target, params, gh, cb) {
           repo.createBranch(oldB?oldB:newB, oldB?newB:null).then((branchResponse) => {
             cb({ok: true, branch:newB});
           });
-          break;
-      case "deleteRef":
-          repo.deleteRef("heads/"+params.branch).then((response) => cb({ok: true}));
           break;
       case "checkAuth":
           var user = (new GitHub(repo.__auth)).getUser();
@@ -85,60 +83,116 @@ function handleRequest(target, params, gh, cb) {
           });
           break;
       case "getContents":
-          repo.getRef("heads/"+params.ref).then((ref) => {
-             const sha = ref.data.object.sha;
-             repo._request('GET', `/repos/${repo.__fullname}/contents/${
-               params.path ? `${encodeURI(params.path)}` : ''}?noCache=${Math.random()}`,
-               { ref: params.ref }).then((response) => {
-                const text = Base64.decode(response.data.content);
-                console.log("got text", text);
-                cb({ok:true, text:`//${JSON.stringify({sha})}\n` + text});
-             });
+          getContents(repo, "heads/"+params.ref, params.path).then((commit) => {
+            cb({ok:true, text:`//${JSON.stringify({sha: commit.sha})}\n` + commit.text});
+          });
+          break;
+      case "merge":
+          repo.compareBranches(params.base, params.head)
+          .then((response) => {
+            if (response.data.behind_by > 0) {
+              Promise.all([
+                getContents(repo, "heads/"+params.base, params.path),
+                getContents(repo, response.data.merge_base_commit.sha, params.path),
+                getContents(repo, "heads/"+params.head, params.path)
+              ]).then( commits => {
+                const baseSHA = commits[0].sha;
+                const headSHA = commits[2].sha;
+                var diff = diff3.merge.apply(this, commits.map(e => e.text.split('\n')));
+                if (diff.conflict) {
+                  cb({ok:false, reason:"conflict", 
+                    conflict:`//${JSON.stringify({sha:headSHA, base:baseSHA})}\n`+diff.result.join('\n')});
+                }
+                else {
+                  if (response.data.ahead_by > 0) {
+                    const message = `Merge ${params.base} into ${params.head}`;
+                    commit(params.head, headSHA, message, diff.result.join('\n'), repo, params.path, baseSHA)
+                    .then(() => {cb({ok:true});});
+                  }
+                  else {
+                    repo.updateHead("heads/"+params.head, baseSHA)
+                    .then(() => {cb({ok:true});});
+                  }
+                }
+              });
+            }
+            else {
+              cb({ok:false, reason:"cannot_merge"});
+            }
           });
           break;
       case "commit":
-          var headSHA;
-          var commitHead = {};
-          var blobSHA;
-          var treeSHA;
-          var newCommitSHA;
-          repo.getRef("heads/"+params.branch).then((ref) => {
-              headSHA=ref.data.object.sha;
-              return repo.getCommit(headSHA);})
-          .then((response) => {
-              const body = response.data;
-              commitHead.sha = body.sha;
-              if (params.localSHA != commitHead.sha) {
-                   cb({ok: false, reason: "oldsha"});
-              }
-              else {
-                commitHead.tree = body.tree;
-                repo.createBlob(params.text).then((blobData) => {
-                    blobSHA = blobData.data.sha;
-                    return repo.getTree(commitHead.tree.sha);})
-                .then((response) => {
-                    treeSHA = response.data.sha;
-                    return repo.createTree([{path:params.path, mode:"100644", type:"blob",
-                         sha:blobSHA}], treeSHA);})
-                .then((newTreeData) => {
-                     return repo._request('POST', `/repos/${repo.__fullname}/git/commits`, 
-                      {tree: newTreeData.data.sha, message: params.message,
-                      parents: params.base? [commitHead.sha, params.base] : [commitHead.sha] })
-                      .then((response) => {
-                        repo.__currentTree.sha = response.data.sha; // Update latest commit
-                        return response;
-                      });
-                 })
-                .then((commitData) => {
-                    newCommitSHA = commitData.data.sha;
-                    return repo.updateHead("heads/"+params.branch, newCommitSHA);})
-                .then(() => {cb({ok: true, newCommitSHA});});
-              } // assumes UTF-8
-          });
+          commit(params.branch, params.localSHA, params.message, params.text,
+            repo, params.path, params.base)
+          .then(cb, cb);
           break;
    }
 }
-         
+
+function commit(branch, localSHA, message, text, repo, path, base) {
+  return new Promise((resolve, reject) => {
+      var headSHA;
+      var commitHead = {};
+      var blobSHA;
+      var treeSHA;
+      var newCommitSHA;
+      repo.getRef("heads/"+branch).then((ref) => {
+          headSHA=ref.data.object.sha;
+          return repo.getCommit(headSHA);})
+      .then((response) => {
+          const body = response.data;
+          commitHead.sha = body.sha;
+          if (localSHA != commitHead.sha) {
+               reject({ok: false, reason: "oldsha"});
+          }
+          else {
+            commitHead.tree = body.tree;
+            repo.createBlob(text).then((blobData) => {
+                blobSHA = blobData.data.sha;
+                return repo.getTree(commitHead.tree.sha);})
+            .then((response) => {
+                treeSHA = response.data.sha;
+                return repo.createTree([{path:path, mode:"100644", type:"blob",
+                     sha:blobSHA}], treeSHA);})
+            .then((newTreeData) => {
+                 return repo._request('POST', `/repos/${repo.__fullname}/git/commits`, 
+                  {tree: newTreeData.data.sha, message,
+                  parents: base? [commitHead.sha, base] : [commitHead.sha] })
+                  .then((response) => {
+                    repo.__currentTree.sha = response.data.sha; // Update latest commit
+                    return response;
+                  });
+             })
+            .then((commitData) => {
+                newCommitSHA = commitData.data.sha;
+                return repo.updateHead("heads/"+branch, newCommitSHA);})
+            .then(() => {resolve({ok: true, newCommitSHA});});
+          } // assumes UTF-8
+      });
+  });
+}
+
+function getContents(repo, ref, path) {
+  return new Promise((resolve, reject) => {
+    var refPromise;
+    if (ref.startsWith("heads/")) {
+      refPromise = repo.getRef(ref);
+    }
+    else {
+      refPromise = repo.getSingleCommit(ref);
+    }
+    return refPromise.then((refData) => {
+      const sha = refData.data.object ? refData.data.object.sha : refData.data.sha;
+      repo._request('GET', `/repos/${repo.__fullname}/contents/${
+        encodeURI(path)}?timestamp=${Date.now()}`, { ref })
+      .then((response) => {
+         const text = Base64.decode(response.data.content);
+         resolve({text, sha});
+      });
+    });
+  });
+}
+ 
 function getAuth() {
   return new Promise((resolve, reject) => {
     const client_id = config.client_id;

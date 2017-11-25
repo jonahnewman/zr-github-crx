@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
-  "name": "ZR Github",
-  "description": "Adds Github capabilities to the ZR website",
+  "name": "ZR GitHub",
+  "description": "Adds GitHub capabilities to the ZR website",
   "version": "0.1.0",
   "background": {
     "scripts": [
@@ -17,7 +17,7 @@
     }
   ],
   "page_action": {
-    "default_title": "Github interface",
+    "default_title": "GitHub interface",
     "default_popup": "popup.html"
   },
    "permissions": [

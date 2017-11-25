@@ -8,7 +8,8 @@ import CommitMessage from '../commit/CommitMessage.jsx';
 import AdvancedOptions from '../advanced/AdvancedOptions.jsx';
 import BranchSwitcher, { BranchList } from '../branches/BranchSwitcher.jsx';
 import AuthStatus from '../auth/AuthStatus.jsx';
-import Merge from '../ace-diff/Merge.jsx';
+import Merge from '../merge/Merge.jsx';
+import Diff from '../ace-diff/Diff.jsx';
 import config from '../../../../../config.json';
 
 class App extends Component {
@@ -19,7 +20,7 @@ class App extends Component {
     this.main = config.file;
     this.inProgressMap = {"commitInProgress":"commit",
        "newBranchInProgress":"creating branch", "fetchInProgress":"retrieving file",
-       "branchDeleteInProgress":"deleting branch","loginInProgress":"login",
+       "mergeInProgress":"merge","loginInProgress":"login",
        "refreshBranchInProgress":"refreshing branches"};
     this.refreshBranches = this.refreshBranches.bind(this);
     this.setStatus = this.setStatus.bind(this);
@@ -28,6 +29,7 @@ class App extends Component {
     this.handleFromBranchChange = this.handleFromBranchChange.bind(this);
     this.handleMergeBaseSHAChange = this.handleMergeBaseSHAChange.bind(this);
     this.handleMergeBaseChange = this.handleMergeBaseChange.bind(this);
+    this.handleMergingChange = this.handleMergingChange.bind(this);
     this.handleCommitSubmit = this.handleCommitSubmit.bind(this);
     this.handleNewBranchSubmit = this.handleNewBranchSubmit.bind(this);
     this.handleFetchSubmit = this.handleFetchSubmit.bind(this);
@@ -94,6 +96,23 @@ class App extends Component {
       base: value}});
   }
 
+  handleMergingChange(newMergingState, conflict) {
+    this.setState({merging: newMergingState});
+    if (newMergingState) {
+      setDoc(conflict);
+      this.setStatus(`Unable to merge cleanly.\n${
+                  ""} Decide if you want to keep only your branch's changes,${
+                  ""} keep only the other branch's changes, or make a brand${
+                  ""} new change, which may incorporate changes from both${
+                  ""} branches. Delete the conflict markers <<<<<<<, =======,${
+                  ""} >>>>>>> and make the changes you want in the final merge.`);
+    }
+    else {
+      this.handleMergeBaseChange(null); 
+      this.handleFetchSubmit();
+    }
+  }
+
   handleActiveUserChange(value) {
     this.setState({activeUser: value});
     this.refreshBranches(true);
@@ -109,8 +128,16 @@ class App extends Component {
     console.log("waiting on content script");
     getDoc().then((doc) => {
       console.log("got doc");
+      if (doc.text.includes("<<<<<<<") || doc.text.includes("=======")
+      || doc.text.includes(">>>>>>>")) {
+        this.setState({commitInProgress: false, status: `It appears that you have${
+          ""} uresolved merge conflicts in this project. Resolve them, then commit${
+          ""} again.`});
+        event.preventDefault();
+        return;
+      }
       chrome.runtime.sendMessage({to:"bg", target:{action:"commit",repo:this.repo},
-         params:{branch:this.state.branch, base: this.state.merging? this.state.mergeBaseSHA: null,
+         params:{branch:this.state.branch, base: this.state.merging? doc.head.base: null,
           text:doc.text, localSHA:doc.head.sha,
           message:this.state.commitMessage, path:this.main}}, (response) => {
           if (response.ok) {
@@ -222,10 +249,12 @@ class App extends Component {
           setStatus={this.setStatus} baseSHA={this.state.mergeBaseSHA}
           base={this.state.mergeBase} updateBase={this.handleMergeBaseChange}
           updateBaseSHA={this.handleMergeBaseSHAChange}
-          updateMerging={(s) => {
-            this.setState({merging:s});
-            if (!s) this.handleMergeBaseChange(null); }}
-          branches={this.state.branches} setStatus={this.setStatus} />
+          updateMerging={this.handleMergingChange}
+          head={this.state.branch}
+          toggleWorkingOnMerge={() => {
+            this.setState({mergeInProgress: !this.state.mergeInProgress}); }}
+          branches={this.state.branches} />
+        <Diff branches={this.state.branches} />
         <AdvancedOptions 
           repoFullName={`${this.repo.user}/${this.repo.name}`}
           login={this.handleLoginSubmit}
@@ -233,6 +262,10 @@ class App extends Component {
         <div>
 	    {this.state.status}
 	</div>
+        <div>
+          {this.state.merging ? `You are in merge mode. Commit once you resolve${
+           ""} the conflicts or abort to abandon your work.` : null }
+        </div>
         <div>
             {Object.keys(this.inProgressMap).reduce((a,k) => {
                 if (this.state[k]) {

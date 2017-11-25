@@ -8,11 +8,13 @@
   },
   "author": "Jonah Weissman",
   "dependencies": {
+    "ace-diff": "benkeen/ace-diff",
     "babel": "^6.23.0",
     "babel-register": "^6.26.0",
     "browser-request": "^0.3.3",
     "es6-promisify": "^5.0.0",
     "github-api": "^3.0.0",
+    "node-diff3": "^1.0.0",
     "react": "^15.5.0",
     "react-chrome-redux": "0.0.7",
     "react-dom": "^15.5.0",
@@ -20,8 +22,7 @@
     "react-select": "^1.0.0-rc.5",
     "redux": "^3.0.4",
     "request": "^2.81.0",
-    "uuid": "^3.1.0",
-    "ace-diff": "benkeen/ace-diff"
+    "uuid": "^3.1.0"
   },
   "devDependencies": {
     "babel-core": "^6.26.0",
@@ -35,7 +36,6 @@
     "gulp-rename": "^1.2.2",
     "gulp-util": "^3.0.7",
     "rimraf": "^2.5.0",
-    "webpack": "^2.6.0",
-    "ace-diff": "benkeen/ace-diff"
+    "webpack": "^2.6.0"
   }
 }

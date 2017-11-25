@@ -14,7 +14,7 @@ function query(action, params) {
             resolve(response);
           }
           else {
-            reject(response && response.reason ? response.reason : response);
+            reject(response);
           }
       });
     });
