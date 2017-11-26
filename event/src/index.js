@@ -58,10 +58,13 @@ function handleRequest(target, params, gh, cb) {
           });
           break;
       case "createBranch":
-          const oldB = params.oldBranch;
-          const newB = params.newBranch;
-          repo.createBranch(oldB?oldB:newB, oldB?newB:null).then((branchResponse) => {
-            cb({ok: true, branch:newB});
+          var getSHA = params.oldBranch.startsWith("sha:") ?
+            Promise.resolve(params.oldBranch.slice("sha:".length))
+            : repo.getRef("heads/"+params.oldBranch)
+              .then((response) => Promise.resolve(response.data.object.sha));
+          getSHA.then(sha => repo.createRef({ref: "refs/heads/"+params.newBranch, sha}))
+          .then(() => {
+            cb({ok: true, branch: params.newBranch});
           });
           break;
       case "checkAuth":
@@ -203,7 +206,7 @@ function listBranches(repo, noCache) {
         var url = `/repos/${repo.__fullname}/branches?page=${page}`;
         if (noCache) url += `&timestamp=${Date.now()}`;
         repo._request('GET', url).then((response) => {
-           next = response.headers.link.includes("next");
+           next = response.headers.link && response.headers.link.includes("next");
            page++;
            branches = branches.concat(response.data);
            console.log(branches);
