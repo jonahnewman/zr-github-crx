@@ -5,6 +5,7 @@ import GitHub from 'github-api';
 import { Base64 } from 'js-base64';
 import config from '../../config.json';
 import * as diff3 from 'node-diff3';
+import promiseDoWhilst from 'promise-do-whilst';
 
 const request = promisify(browserRequest);
 
@@ -51,10 +52,9 @@ function handleRequest(target, params, gh, cb) {
          getAuth(cb);
          break;
       case "listBranches":
-          var url = `/repos/${repo.__fullname}/branches`;
-          if (params && params.noCache) url += `?timestamp=${Date.now()}`;
-          repo._request('GET', url).then((branches) => {
-            cb({ok:true, branches: branches.data});
+          listBranches(repo, params && params.noCache)
+          .then((branches) => {
+            cb({ok:true, branches});
           });
           break;
       case "createBranch":
@@ -193,6 +193,30 @@ function getContents(repo, ref, path) {
   });
 }
  
+function listBranches(repo, noCache) {
+  return new Promise((resolve, reject) => {
+    let page = 1;
+    let next = false;
+    let branches = [];
+    promiseDoWhilst(() => { 
+      return new Promise((res, rej) => {
+        var url = `/repos/${repo.__fullname}/branches?page=${page}`;
+        if (noCache) url += `&timestamp=${Date.now()}`;
+        repo._request('GET', url).then((response) => {
+           next = response.headers.link.includes("next");
+           page++;
+           branches = branches.concat(response.data);
+           console.log(branches);
+           res();
+        });
+      });
+    }, () => {
+      return next;
+    })
+    .then(() => {resolve(branches); });
+  });
+}
+
 function getAuth() {
   return new Promise((resolve, reject) => {
     const client_id = config.client_id;

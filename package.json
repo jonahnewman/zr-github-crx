@@ -15,6 +15,7 @@
     "es6-promisify": "^5.0.0",
     "github-api": "^3.0.0",
     "node-diff3": "^1.0.0",
+    "promise-do-whilst": "^1.0.1",
     "react": "^15.5.0",
     "react-chrome-redux": "0.0.7",
     "react-dom": "^15.5.0",
