@@ -46,11 +46,13 @@ function showDiff(head) {
         left: {
             id: "editor1",
             content: oldEditor.getValue(),
-            copyLinkEnabled: false
+            copyLinkEnabled: false,
+            editable: false
         },
         right: {
             id: "editor2",
             content: "${scrubbedHead}",
+            copyLinkEnabled: false,
             editable: false,
         },
         classes: {
@@ -84,6 +86,10 @@ function showDiff(head) {
     }
   }); 
   (document.head || document.documentElement).appendChild(s);
+
+  window.addEventListener("beforeunload", () => {
+    chrome.storage.local.set({diffing: false});
+  });
 }
 
 function includeExtensionFile(path) {

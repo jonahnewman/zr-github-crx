@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import ContentScript, {includeExtensionFile} from './Merge.js';
+import ContentScript, {includeExtensionFile} from './AceDiff.js';
 import query from '../../eventApi.js';
 import { BranchList } from '../branches/BranchSwitcher.jsx';
 
@@ -8,72 +8,66 @@ class Diff extends Component {
     super(props);
     this.startDiff = this.startDiff.bind(this);
     this.stopDiff = this.stopDiff.bind(this);
-    this.state = {mergeDialogOpen: false};
+    this.state = {dialogOpen: false};
   }
 
   componentWillReceiveProps(nextProps) {
-    if (this.props.merging && !nextProps.merging) {
-      console.log("stopping merge after successful commit");
+    if (this.props.diffing && !nextProps.diffing) {
       this.stopDiff();
     }
   }
 
   startDiff(event) {
-   if (this.props.merging || !this.props.base) {
+   if (this.props.diffing || !this.state.base) {
      event.preventDefault();
      return;
    }
-   this.props.updateMerging(true);
+   this.props.updateDiffing(true);
    query("getContents",
-      {ref:this.props.base, path:this.props.path})
+      {ref:this.state.base, path:this.props.path})
     .then((response) => {
-      this.props.updateBaseSHA(JSON.parse(response.text.match(/^\/\/(.+)/)[1]).sha);
-      var scrubbed = response.text.replace(/"/g,'\\\"');
-      scrubbed = scrubbed.replace(/\n/g, '\\n');
-      scrubbed = scrubbed.replace(/'/g, "\\'");
+      var scrubbed = response.text.replace(/"/g,'\\\"')
+      .replace(/\n/g, '\\n')
+      .replace(/'/g, "\\'");
       chrome.tabs.executeScript({code: ContentScript
       + includeExtensionFile+"showDiff(\'"+scrubbed+"\');"});
-      this.props.setStatus(`Merging with ${this.props.base+'\n'
-        }. Commit when complete or abort to stop`);
     });
     event.preventDefault();
   }
 
   stopDiff() {
     var self = this;
-    this.props.updateBaseSHA("");
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
       chrome.tabs.sendMessage(tabs[0].id, {to:"diff", msg: "stopDiff"}, function(response) {
       });
     });
-    this.props.setStatus("");
-    this.setState({mergeDialogOpen: false});
+    this.setState({dialogOpen: false});
   }
 
   render() {
     return (
       <div>
-        {this.props.merging ? 
+        {this.props.diffing ? 
           <form onSubmit={(event) => {
-              this.props.updateMerging(false);
+              this.props.updateDiffing(false);
               event.preventDefault();
             }
           }>
-            <input type="submit" value="Abort merge" />
+            <input type="submit" value="stop diffing" />
           </form>
         :
           <div>
             <input type="button" value="diff" onClick={() => 
-              {this.setState({mergeDialogOpen: true}) }} />
-            {this.state.mergeDialogOpen ?
+              {this.setState({dialogOpen: true}) }} />
+            {this.state.dialogOpen ?
               <form onSubmit={this.startDiff}>
                 <div style={{display:"flex"}}>
                   <span> with branch </span>
                   <div style={{flexGrow:"1"}}>
-                    <BranchList value={this.props.base} branches={this.props.branches}
-                      updateFunc={this.props.updateBase} />
+                    <BranchList value={this.state.base} branches={this.props.branches}
+                      updateFunc={(base) => {this.setState({base});}} />
                   </div>
-                  <div><input type="submit" value="start merge" /></div>
+                  <div><input type="submit" value="start diff" /></div>
                 </div>
               </form>
             : null }

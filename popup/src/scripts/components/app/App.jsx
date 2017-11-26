@@ -35,10 +35,11 @@ class App extends Component {
     this.handleFetchSubmit = this.handleFetchSubmit.bind(this);
     this.handleRepoChangeSubmit = this.handleRepoChangeSubmit.bind(this);
     this.handleActiveUserChange = this.handleActiveUserChange.bind(this);
+    this.updateDiffing = this.updateDiffing.bind(this);
   }
  
   componentWillMount() {
-    chrome.storage.local.get(["branch","repo","merge"], (data) => {
+    chrome.storage.local.get(["branch","repo","merge","diffing"], (data) => {
         const branch = data["branch"];
         const repo = data["repo"];
       	if (branch) {
@@ -50,6 +51,9 @@ class App extends Component {
         if (data.merge) {
           this.setState({merging:data.merge.merging,
             mergeBase: data.merge.base});
+        }
+        if (data.diffing) {
+          this.setState({diffing: data.diffing});
         }
       	if (this.state.activeUser) this.refreshBranches();
     });
@@ -86,31 +90,44 @@ class App extends Component {
     this.setState({[event.target.name]: event.target.value});
   }
 
+  updateDiffing(value) {
+    this.setState({diffing: value});
+    chrome.storage.local.set({diffing: value});
+  }
+
   handleMergeBaseSHAChange(value) {
     this.setState({mergeBaseSHA: value, merging: value? true : false});
   }
  
   handleMergeBaseChange(value) {
     this.setState({mergeBase: value});
-    chrome.storage.local.set({merge: {merging: value?true:false,
+    chrome.storage.local.get("merge", (data) => {
+      chrome.storage.local.set({merge: {merging: data.merge.merging,
       base: value}});
+    });
   }
 
   handleMergingChange(newMergingState, conflict) {
     this.setState({merging: newMergingState});
-    if (newMergingState) {
-      setDoc(conflict);
-      this.setStatus(`Unable to merge cleanly.\n${
-                  ""} Decide if you want to keep only your branch's changes,${
-                  ""} keep only the other branch's changes, or make a brand${
-                  ""} new change, which may incorporate changes from both${
-                  ""} branches. Delete the conflict markers <<<<<<<, =======,${
-                  ""} >>>>>>> and make the changes you want in the final merge.`);
-    }
-    else {
-      this.handleMergeBaseChange(null); 
-      this.handleFetchSubmit();
-    }
+    debugger;
+    chrome.storage.local.get("merge", (data) => {
+      chrome.storage.local.set({merge: {merging: newMergingState, base: data.merge.base}},
+      () => {
+        if (newMergingState) {
+           setDoc(conflict);
+           this.setStatus(`Unable to merge cleanly.\n${
+                       ""} Decide if you want to keep only your branch's changes,${
+                       ""} keep only the other branch's changes, or make a brand${
+                       ""} new change, which may incorporate changes from both${
+                       ""} branches. Delete the conflict markers <<<<<<<, =======,${
+                       ""} >>>>>>> and make the changes you want in the final merge.`);
+         }
+         else {
+           this.handleMergeBaseChange(null); 
+           this.handleFetchSubmit();
+         }
+      });
+    });
   }
 
   handleActiveUserChange(value) {
@@ -200,7 +217,7 @@ class App extends Component {
          ""} Press ctrl+z in the editor to undo.`});
         setDoc(response.text);
     });
-    event.preventDefault();
+    if (event) event.preventDefault();
   }
  
   handleRepoChangeSubmit(repoUser, repoName) {
@@ -254,7 +271,10 @@ class App extends Component {
           toggleWorkingOnMerge={() => {
             this.setState({mergeInProgress: !this.state.mergeInProgress}); }}
           branches={this.state.branches} />
-        <Diff branches={this.state.branches} />
+        <Diff branches={this.state.branches} path={this.main}
+          diffing={this.state.diffing}
+          updateDiffing={this.updateDiffing}
+           />
         <AdvancedOptions 
           repoFullName={`${this.repo.user}/${this.repo.name}`}
           login={this.handleLoginSubmit}

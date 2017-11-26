@@ -1,6 +1,6 @@
 # About
 ## What is this?
-This repo contains the source code for a chrome extension that will allow you to push code to GitHub from the [Zero Robotics](http://zerorobotics.mit.edu) IDE. In addition to making commits, features include branch creation and split-screen editor merging.
+This repo contains the source code for a chrome extension that will allow you to push code to GitHub from the [Zero Robotics](http://zerorobotics.mit.edu) IDE.
 ## Why not just publish this on the Chrome Webstore?
 Chrome extensions can't really keep secrets. That's a problem because in order to use GitHub's API, you need a Client Secret that should not be shared with users. In addition, using a published version of this extension would require trusting the publisher with your team's code, whereas the source-code of a self-built version can be audited.
 
@@ -35,7 +35,7 @@ npm install --global gulp-cli
    * [Create a Repository](https://github.com/new) on GithHub. For now, you can leave it as public, but you should make it private before you start storing your team's code there. You can skip making a `README` or `.gitignore`.
    * Download an empty ZR document to be the initial commit of your repo.
    * Create a local version of your repository.
-     ```
+     ```shell
      cd ~
      git init THE_NAME_OF_YOUR_REPO
      cd THE_NAME_OF_YOUR_REPO
@@ -93,8 +93,13 @@ Installation complete! You can now use your extension.
 Let's say some time has passed, and `master` and `test` have diverged. You want to integrate the work you've done on `test` into `master`.
 1. Switch your active branch to `master`. Fetch the latest commit.
 2. Click "merge," select `test` for "merge with" and then click "start merge."
-3. Now, use your judgement to add any relevant code snippets into `master`. While you're in this state, if you hit compile in the ZR IDE, it'll compile the code in the left editor.
-4. Once you're done, go back to the extension, add a commit message, and click "commit and push." If you go to your repo on GitHub, you'll be able to see that the most recent commit has two parents; it is a merge commit.
+3. If the changes you made in `master` and `test` related to different parts of the code, it's possible the merge will happen with no issue.
+Otherwise, the extension will present you with merge conflicts. Once you have resolved the conflicts, you can click "commit and push".
+
+## Comparing your current code to a branch
+1. Click "diff", select a branch, and click "start diff".
+2. Now you can see the differences between what was in your editor and the branch you selected.
+3. When you're done, click "stop diff"
 
 ## Simulating against another branch
 You may find yourself wanting to run a simulation against code on another branch. Here's how.
