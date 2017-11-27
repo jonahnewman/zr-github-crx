@@ -27,9 +27,9 @@ npm install --global gulp-cli
 ```
 ## Configure
 ### Make your own config.json file
-1. Copy the example
+1. Copy the template
    ```
-   cp config-example.json config.json
+   cp config-template.json config.json
    ```
 2. Set up the repo field
 
@@ -82,8 +82,20 @@ Normally, when an extension is loaded unpacked, Chrome will give it a random ID.
 
 Add the key value to `manifest.json`, then click "Load unpacked extension..." in the chrome://extensions developer options and select your `build` folder.
 
+## For your team
+Once you have a `crx` (or build folder for Windows and macOS users), you can distribute it to members of your team without each of them having to go through this same process.
+### Updating
+If a new version is released, you can update your extension with the following code:
+```shell
+cd zr-github-crx # or wherever your copy of this repo is
+git pull
+# you may need to update your manifest.json based on changes in manifest-example.json
+npm install
+gulp
+```
+Your `build` folder should now have the updated source. You can repackage the extension from `chrome://extensions`.
+
 # Usage
-Installation complete! You can now use your extension.
 ## Make a commit
 1. It is only enabled on IDE pages, so create a new project. The extension icon will change from light gray to dark gray when it recognizes you are on an IDE page.
 2. Click the extension icon. Click "Log in." You will have to provide your GitHub credentials and authorize your application to access your repos.

@@ -164,9 +164,10 @@ class App extends Component {
               setDoc(`//${JSON.stringify({sha:response.newCommitSHA})}\n${doc.text}`);
           }
           else if (response.reason == "oldsha") {
-               this.setState({status: `The file you are committing is not the most recent${
-                                ""} in its branch. Fetch the latest in a new tab, integrate your${
-                                ""} changes, and then commit again.`});
+               this.setState({fromBranch: "sha:"+doc.head.sha, branch:"give-this-branch-a-name",
+                                status: `The file you are committing is not the most recent${
+                                ""} in its branch. Create a new branch and commit to it. Then${
+                                ""} merge your new branch into the original branch.`});
           }
           this.setState({commitInProgress: false});
       });

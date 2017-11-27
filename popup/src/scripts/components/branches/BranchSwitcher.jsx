@@ -24,7 +24,7 @@ class BranchSwitcher extends Component {
             {this.props.branches.map(e=>e.name).includes(this.props.branch)
               || this.props.branch == "" || !this.props.branches ? null :
              <form onSubmit={this.props.createBranch}>
-               from existing branch:
+               from existing branch or sha:
                <BranchList
                  placeholder={"Select a branch or type a commit SHA"}
                  branches={this.props.branches} value={this.props.fromBranch}
@@ -60,7 +60,7 @@ class BranchList extends Component {
     const options = this.props.branches.map(e=>{return {label: e.name, value:e.name}});
     const onChange = (change) => { this.props.updateFunc(change.value) };
     const value = this.props.value && {label:this.props.value, value:this.props.value};
-    console.log("val",value,"func",this.props.newOptionCreator);
+    const contains = (str, list) => list.reduce((a, e) => a || str.includes(e), false);
     return (
       <div>
         {this.props.branches.length == 0 ? <div>Loading branches...</div> :
@@ -74,7 +74,8 @@ class BranchList extends Component {
                 placeholder={this.props.placeholder}
                 newOptionCreator={this.props.newOptionCreator}
                 isValidNewOption={(branch) =>
-                  branch.label && branch.label.indexOf(" ")==-1 }
+                  branch.label && !contains(branch.label, [" ", "..", "\\",
+                  "^", ":", "~", "%"]) }
                 promptTextCreator={this.props.promptTextCreator} />
             :
               <Select 
