@@ -12,7 +12,8 @@ You will need to clone this repository:
 git clone https://github.com/jonahweissman/zr-github-crx.git
 ```
 ## Get NPM
-NPM (Node Package Manager) is essential for dealing with all the libraries in this project. Installation instructions will vary by OS.
+NPM (Node Package Manager) is essential for dealing with all the libraries in this project.
+Installation instructions will vary by OS.
 * Windows: http://blog.teamtreehouse.com/install-node-js-npm-windows
 * Linux: http://blog.teamtreehouse.com/install-node-js-npm-linux
 
@@ -33,7 +34,9 @@ npm install --global gulp-cli
    ```
 2. Set up the repo field
 
-   * [Create a Repository](https://github.com/new) on GithHub. For now, you can leave it as public, but you should make it private before you start storing your team's code there. You can skip making a `README` or `.gitignore`.
+   * [Create a Repository](https://github.com/new) on GithHub. For now, you can leave
+     it as public, but you should make it private before you start storing your team's
+     code there. You can skip making a `README` or `.gitignore`.
    * Download an empty ZR document to be the initial commit of your repo.
    * Create a local version of your repository.
      ```shell
@@ -51,7 +54,9 @@ npm install --global gulp-cli
      2. "name" is the name of your repository
      3. "file" is `project.cpp`, but, of course, if you renamed project.cpp, you should use the new name.
 3. Set up a GitHub OAuth2 application
-   * Go to the [developer applications](https://github.com/settings/developers) page. Click "New OAuth App." Give it a name. Give it a homepage URL (this can be anything; it's just presented to users when they authorize your app.) For now, put any valid URL in the callback field, we'll change it later.
+   * Go to the [developer applications](https://github.com/settings/developers) page. Click "New OAuth App."
+     Give it a name. Give it a homepage URL (this can be anything; it's just presented to users when they authorize
+     your app.) For now, put any valid URL in the callback field, we'll change it later.
    * Copy the Client ID and the Client Secret into the appropriate fields of `config.json`
 ### Make your own manifest.json file
 1. Copy the example
@@ -73,12 +78,15 @@ You should now have a folder called `build`.
 3. For "Extension root directory" browse to `zr-github-crx/build`. Leave the "Private key file" field empty.
 4. Click "Pack Extension." Drag and drop your shiny new `build.crx` onto your Extensions page.
 5. Find "ZR Github" in the list of extensions. Below `details` it should say `ID: *a bunch of letters*`. Copy the ID. 
-6. Go back to your [OAuth Applicatons](https://github.com/settings/developers) page on GitHub. Change the "Authorization callback URL" to `https://YOUR_EXTENSION_ID.chromiumapp.org/cb`. Click "Update application."
+6. Go back to your [OAuth Applicatons](https://github.com/settings/developers) page on GitHub.
+   Change the "Authorization callback URL" to `https://YOUR_EXTENSION_ID.chromiumapp.org/cb`. Click "Update application."
 
 ## Using the extension on Windows and macOS
 On Windows and macOS, Chrome will disable the extension by default. The only workaround is to load the extension unpacked. 
-Normally, when an extension is loaded unpacked, Chrome will give it a random ID. However, this extension relies on a static key for the GitHub OAuth callback, so we must specify the key field in `manifest.json`. [This Chrome article explains](https://developer.chrome.com/apps/manifest/key):
->To get a suitable key value, first install your extension from a .crx file (you may need to upload your extension or package it manually). Then, in your user data directory, look in the file Default/Extensions/<extensionId>/<versionString>/manifest.json. You will see the key value filled in there.
+Normally, when an extension is loaded unpacked, Chrome will give it a random ID. However, this extension relies on
+a static key for the GitHub OAuth callback, so we must specify the key field in `manifest.json`.
+[This Chrome article explains](https://developer.chrome.com/apps/manifest/key):
+> To get a suitable key value, first install your extension from a .crx file (you may need to upload your extension or package it manually). Then, in your user data directory, look in the file Default/Extensions/<extensionId>/<versionString>/manifest.json. You will see the key value filled in there.
 
 Add the key value to `manifest.json`, then click "Load unpacked extension..." in the chrome://extensions developer options and select your `build` folder.
 
@@ -130,4 +138,4 @@ You may find yourself wanting to run a simulation against code on another branch
 5. Simulate
 
 # Contributing
-I really hope this extension is useful for your team. If it is helpful, I would really appreciate it if you [post issues](http://github.com/jonahweissman/zr-github-crx/issues) you find and [make pull requests](http://github.com/jonahweissman/zr-github-crx/pulls) with bug fixes / enhancements.
+Check out the [contributing guide](.github/CONTRIBUTING.md)
