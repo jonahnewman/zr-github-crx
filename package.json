@@ -4,7 +4,7 @@
   "private": false,
   "description": "Provides GitHub functionality on the Zero Robotics IDE",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "standard && echo \"Error: no test specified\" && exit 1"
   },
   "author": "Jonah Weissman",
   "dependencies": {
@@ -12,7 +12,6 @@
     "babel": "^6.23.0",
     "babel-register": "^6.26.0",
     "browser-request": "^0.3.3",
-    "es6-promisify": "^5.0.0",
     "github-api": "^3.0.0",
     "node-diff3": "^1.0.0",
     "promise-do-whilst": "^1.0.1",
@@ -37,6 +36,7 @@
     "gulp-rename": "^1.2.2",
     "gulp-util": "^3.0.7",
     "rimraf": "^2.5.0",
+    "standard": "*",
     "webpack": "^2.6.0"
   }
 }
