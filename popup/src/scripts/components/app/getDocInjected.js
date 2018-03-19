@@ -1,6 +1,6 @@
-function getDoc(cb) {
-  console.log("getDoc content script is running");
-  var s = document.createElement('script');
+function getDoc (cb) {
+  console.log('getDoc content script is running')
+  var s = document.createElement('script')
   /**
    * Injected into ZR IDE page.
    * Then sends it back to content script in a custom event
@@ -16,20 +16,19 @@ function getDoc(cb) {
       detail: doc
     }));
     console.log("sent event", doc);
-  `;
-  s.onload = function() {
-      this.remove();
-  };
-  console.log("script tag", s);
-  
-  document.addEventListener("ZRGITHUB_extension_communication_get", function(e) {
-    console.log("received", e.detail);
-    chrome.runtime.sendMessage({doc: e.detail}, function(response) {
-      console.log(response);
-    });
+  `
+  s.onload = function () {
+    this.remove()
+  }
+  console.log('script tag', s)
+
+  document.addEventListener('ZRGITHUB_extension_communication_get', function (e) {
+    console.log('received', e.detail)
+    window.chrome.runtime.sendMessage({doc: e.detail}, function (response) {
+      console.log(response)
+    })
   });
 
-  (document.head || document.documentElement).appendChild(s);
-
+  (document.head || document.documentElement).appendChild(s)
 }
-export default getDoc;
+export default getDoc

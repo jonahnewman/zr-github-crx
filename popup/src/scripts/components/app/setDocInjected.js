@@ -5,11 +5,11 @@
  * `Editor` class to set the document contents. Because of how
  * ZR set Ace up, it will be automatically synced with Drive.
  */
-function setDoc(doc) {
-  console.log("setDoc content script is running");
-  var scrubbedDoc = doc.replace(/`/g, '\\`');
-  console.log(scrubbedDoc);
-  var s = document.createElement('script');
+function setDoc (doc) {
+  console.log('setDoc content script is running')
+  var scrubbedDoc = doc.replace(/`/g, '\\`')
+  console.log(scrubbedDoc)
+  var s = document.createElement('script')
   /**
    * Injected into ZR IDE page.
    */
@@ -22,21 +22,19 @@ function setDoc(doc) {
     document.dispatchEvent(new CustomEvent('ZRGITHUB_extension_communication_set', {
       ok: true
     }));
-  `;
+  `
 
-  s.onload = function() {
-  
-      this.remove();
-  };
-  console.log("script tag", s);
-  
-  document.addEventListener("ZRGITHUB_extension_communication_set", function(e) {
-    chrome.runtime.sendMessage({doc: e.detail}, function(response) {
-      console.log(response);
-    });
+  s.onload = function () {
+    this.remove()
+  }
+  console.log('script tag', s)
+
+  document.addEventListener('ZRGITHUB_extension_communication_set', function (e) {
+    window.chrome.runtime.sendMessage({doc: e.detail}, function (response) {
+      console.log(response)
+    })
   });
-  
-  (document.head || document.documentElement).appendChild(s);
 
+  (document.head || document.documentElement).appendChild(s)
 }
-export default setDoc;
+export default setDoc
