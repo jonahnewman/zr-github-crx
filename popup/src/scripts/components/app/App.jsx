@@ -282,7 +282,7 @@ class App extends Component {
             this.setState({mergeInProgress: !this.state.mergeInProgress})
           }}
           branches={this.state.branches} />
-        <Diff branches={this.state.branches} path={this.main}
+        <Diff placeholder={this.state.branch} branches={this.state.branches} path={this.main}
           diffing={this.state.diffing}
           updateDiffing={this.updateDiffing}
         />
