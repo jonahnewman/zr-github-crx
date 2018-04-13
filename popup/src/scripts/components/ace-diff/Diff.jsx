@@ -44,6 +44,8 @@ class Diff extends Component {
   }
 
   render () {
+    console.log(this.state)
+    console.log(this.props.placeholder)
     return (
       <div>
         {this.props.diffing
@@ -62,7 +64,8 @@ class Diff extends Component {
                   <span> with branch </span>
                   <div style={{flexGrow: '1'}}>
                     <BranchList value={this.state.base} branches={this.props.branches}
-                      updateFunc={(base) => { this.setState({base}) }} />
+                      placeholder={this.props.placeholder}
+		      updateFunc={(base) => { this.setState({base}) }} />
                   </div>
                   <div><input type='submit' value='start diff' /></div>
                 </div>

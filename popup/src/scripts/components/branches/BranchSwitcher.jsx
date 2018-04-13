@@ -54,6 +54,7 @@ class BranchList extends Component {
     const onChange = (change) => { this.props.updateFunc(change.value) }
     const value = this.props.value && {label: this.props.value, value: this.props.value}
     const contains = (str, list) => list.reduce((a, e) => a || str.includes(e), false)
+    console.log(this.props.placeholder)
     return (
       <div>
         {this.props.branches.length === 0 ? <div>Loading branches...</div>
