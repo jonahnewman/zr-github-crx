@@ -73,7 +73,7 @@ class BranchList extends Component {
                 promptTextCreator={this.props.promptTextCreator} />
               : <Select
                 options={options} value={value}
-                clearable={false}
+                clearable={false} placeholder = {this.props.placeholder}
                 disabled={this.props.disabled}
                 onChange={onChange} />}
           </div>}
