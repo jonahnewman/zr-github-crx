@@ -3,7 +3,7 @@
   "name": "ZR GitHub",
   "description": "Adds GitHub capabilities to the ZR website",
   "version": "0.1.0",
-  "update_url": "www.updateurl.com",
+  "update_url": "www.example.com",
   "background": {
     "scripts": [
       "event.js"
