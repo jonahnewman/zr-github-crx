@@ -8,7 +8,7 @@ class Diff extends Component {
     super(props)
     this.startDiff = this.startDiff.bind(this)
     this.stopDiff = this.stopDiff.bind(this)
-    this.state = {dialogOpen: false}
+    this.state = {dialogOpen: false, base: this.props.defaultValue}
   }
 
   componentWillReceiveProps (nextProps) {
@@ -64,7 +64,6 @@ class Diff extends Component {
                   <span> with branch </span>
                   <div style={{flexGrow: '1'}}>
                     <BranchList value={this.state.base} branches={this.props.branches}
-                      placeholder={this.props.placeholder}
 		      updateFunc={(base) => { this.setState({base}) }} />
                   </div>
                   <div><input type='submit' value='start diff' /></div>

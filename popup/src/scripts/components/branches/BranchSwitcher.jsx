@@ -65,7 +65,6 @@ class BranchList extends Component {
                 onChange={onChange}
                 clearable={false}
                 disabled={this.props.disabled}
-                placeholder={this.props.placeholder}
                 newOptionCreator={this.props.newOptionCreator}
                 isValidNewOption={(branch) =>
                   branch.label && !contains(branch.label, [' ', '..', '\\',
